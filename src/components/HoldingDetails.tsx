@@ -1,4 +1,4 @@
-import { CalendarDays, Coins, Pencil, X } from 'lucide-react';
+import { CalendarDays, Coins, Download, FileText, Pencil, X } from 'lucide-react';
 import type { Holding, ManualQuote } from '../types';
 import { holdingCost, holdingProfit, holdingValue } from '../features/holdings/calculations';
 import { currency, decimal, formatDate } from '../lib/format';
@@ -23,6 +23,15 @@ export default function HoldingDetails({ item, quote, onClose, onEdit }: Props) 
         <div className="detail-result"><span>กำไร/ขาดทุนโดยประมาณ</span><strong className={profit === null ? 'profit-pending' : profit >= 0 ? 'profit-positive' : 'profit-negative'}>{profit === null ? 'รอราคาอ้างอิง' : `${profit >= 0 ? '+' : '−'}${currency.format(Math.abs(profit))}`}</strong></div>
       </div>
       {item.note && <div className="detail-note"><span>บันทึกเพิ่มเติม</span><p>{item.note}</p></div>}
+      {(item.goldPhoto || item.warrantyDocument) && <section className="detail-attachments" aria-labelledby="detail-attachments-title">
+        <h3 id="detail-attachments-title">รูปทองและใบรับประกัน</h3>
+        <div className="detail-attachment-grid">
+          {item.goldPhoto && <a className="detail-photo-link" href={item.goldPhoto.dataUrl} target="_blank" rel="noreferrer" aria-label={`เปิดรูปทอง ${item.goldPhoto.name}`}><img src={item.goldPhoto.dataUrl} alt="รูปทองที่บันทึกไว้" /><span><Coins size={14} />รูปทอง</span></a>}
+          {item.warrantyDocument && (item.warrantyDocument.mimeType === 'application/pdf'
+            ? <a className="detail-document-link" href={item.warrantyDocument.dataUrl} target="_blank" rel="noreferrer" aria-label={`เปิดใบรับประกัน ${item.warrantyDocument.name}`}><FileText size={23} /><span><strong>ใบรับประกัน (PDF)</strong><small>{item.warrantyDocument.name}</small></span><Download size={16} /></a>
+            : <a className="detail-photo-link" href={item.warrantyDocument.dataUrl} target="_blank" rel="noreferrer" aria-label={`เปิดภาพใบรับประกัน ${item.warrantyDocument.name}`}><img src={item.warrantyDocument.dataUrl} alt="ภาพใบรับประกันที่บันทึกไว้" /><span><FileText size={14} />ใบรับประกัน</span></a>)}
+        </div>
+      </section>}
       <div className="modal-actions"><button className="button button-ghost" onClick={onClose}>ปิด</button><button className="button button-primary" onClick={onEdit}><Pencil size={15} />แก้ไขข้อมูล</button></div>
     </section>
   </div>;

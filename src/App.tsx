@@ -12,7 +12,7 @@ import { holdingCost, holdingProfit, holdingValue, totalWeight, totals } from '.
 import { quoteIsComplete, quoteIsStale } from './features/prices/quote';
 import { currency, decimal, formatDate, formatDateTime } from './lib/format';
 import { getHoldings, getQuote, removeHolding, replaceAllHoldings, saveHolding, saveQuote } from './lib/storage/db';
-import type { AppTab, Holding, ManualQuote } from './types';
+import type { AppTab, Holding, HoldingAttachment, ManualQuote } from './types';
 
 const emptyQuote: ManualQuote = { barBuy: null, barSell: null, ornamentBuy: null, ornamentSell: null, quotedAt: '', sourceUrl: 'https://www.goldtraders.or.th/' };
 const sourceUrl = 'https://www.goldtraders.or.th/';
@@ -22,6 +22,18 @@ function money(value: number | null | undefined): string {
 }
 
 function kindName(kind: Holding['kind']): string { return kind === 'bar' ? 'ทองคำแท่ง' : 'ทองรูปพรรณ'; }
+
+function validAttachment(value: unknown, allowedTypes: string[]): value is HoldingAttachment {
+  if (value === undefined) return true;
+  if (!value || typeof value !== 'object') return false;
+  const attachment = value as Partial<HoldingAttachment>;
+  if (typeof attachment.name !== 'string' || attachment.name.length > 255 || typeof attachment.mimeType !== 'string' || !allowedTypes.includes(attachment.mimeType)) return false;
+  if (typeof attachment.sizeBytes !== 'number' || !Number.isFinite(attachment.sizeBytes) || attachment.sizeBytes <= 0 || attachment.sizeBytes > 5 * 1024 * 1024) return false;
+  if (typeof attachment.dataUrl !== 'string' || attachment.dataUrl.length > 7_100_000) return false;
+  const prefix = `data:${attachment.mimeType};base64,`;
+  if (!attachment.dataUrl.startsWith(prefix)) return false;
+  return /^[A-Za-z0-9+/]*={0,2}$/.test(attachment.dataUrl.slice(prefix.length));
+}
 
 function StatCard({ label, value, note, icon, tone = '' }: { label: string; value: string; note: string; icon: React.ReactNode; tone?: string }) {
   return <article className="stat-card"><div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div><strong className={`stat-value ${tone}`}>{value}</strong><span className="stat-note">{note}</span></article>;
@@ -126,7 +138,7 @@ export default function App() {
       const parsed: unknown = JSON.parse(await file.text());
       if (!parsed || typeof parsed !== 'object' || !('format' in parsed) || parsed.format !== 'thong-port-backup' || !('version' in parsed) || parsed.version !== 1 || !('holdings' in parsed) || !Array.isArray(parsed.holdings) || !('quote' in parsed)) throw new Error('ไฟล์นี้ไม่ใช่ไฟล์สำรองของทองพอร์ต');
       const incoming = parsed.holdings as Holding[];
-      const isValid = incoming.every((item) => item && typeof item.id === 'string' && (item.kind === 'bar' || item.kind === 'ornament') && [item.quantity, item.weightPerItem, item.purchasePricePerBaht, item.additionalCost].every((value) => typeof value === 'number' && Number.isFinite(value) && value >= 0) && typeof item.purchasedAt === 'string');
+      const isValid = incoming.every((item) => item && typeof item.id === 'string' && (item.kind === 'bar' || item.kind === 'ornament') && typeof item.quantity === 'number' && Number.isInteger(item.quantity) && item.quantity >= 1 && typeof item.weightPerItem === 'number' && Number.isFinite(item.weightPerItem) && item.weightPerItem > 0 && typeof item.purchasePricePerBaht === 'number' && Number.isFinite(item.purchasePricePerBaht) && item.purchasePricePerBaht > 0 && typeof item.additionalCost === 'number' && Number.isFinite(item.additionalCost) && item.additionalCost >= 0 && typeof item.purchasedAt === 'string' && typeof item.note === 'string' && typeof item.createdAt === 'string' && typeof item.updatedAt === 'string' && validAttachment(item.goldPhoto, ['image/jpeg', 'image/png', 'image/webp']) && validAttachment(item.warrantyDocument, ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']));
       if (!isValid) throw new Error('ข้อมูลรายการทองในไฟล์ไม่ถูกต้อง');
       const incomingQuote = parsed.quote as ManualQuote;
       const validQuote = [incomingQuote.barBuy, incomingQuote.barSell, incomingQuote.ornamentBuy, incomingQuote.ornamentSell].every((value) => value === null || (typeof value === 'number' && Number.isFinite(value) && value >= 0)) && typeof incomingQuote.quotedAt === 'string';

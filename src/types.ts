@@ -1,5 +1,12 @@
 export type GoldKind = 'bar' | 'ornament';
 
+export interface HoldingAttachment {
+  name: string;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
+  dataUrl: string;
+  sizeBytes: number;
+}
+
 export interface Holding {
   id: string;
   kind: GoldKind;
@@ -9,6 +16,8 @@ export interface Holding {
   additionalCost: number;
   purchasedAt: string;
   note: string;
+  goldPhoto?: HoldingAttachment;
+  warrantyDocument?: HoldingAttachment;
   createdAt: string;
   updatedAt: string;
 }
