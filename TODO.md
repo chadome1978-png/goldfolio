@@ -13,6 +13,9 @@
 - [x] `pnpm build` ผ่าน; app root และ route manifest ตอบ HTTP 200; ตรวจ screenshot ที่ viewport 390px/1440px
 - [x] ลบข้อมูล/ราคา test ออกจาก browser sandbox หลังการทดสอบ
 
+## ธีมใหม่ที่รอผู้ใช้ตรวจ — หน้า Overview เท่านั้น
+- [x] ทดลองธีมจากแดงเป็นน้ำเงินเข้มเงาโลหะ และเปลี่ยนพื้นหลังเป็นโทนสว่างคล้ายทองจริงบนหน้าภาพรวมก่อน โดยคงแท็บอื่นเป็นธีมเดิมจนกว่าจะได้รับการยืนยัน
+
 ## QA ก่อนเผยแพร่
 - [ ] ทำ manual WCAG 2.2 AA audit ครบ รวม keyboard/focus order, screen reader, contrast, touch target และ zoom 200%
 - [ ] ทดสอบ Safari/iOS, Chrome/Android และอุปกรณ์ desktop จริง

@@ -54,6 +54,10 @@ React 19, TypeScript 7, Vite 8, CSS custom properties; build เป็น static
 
 ใช้ system font stack ที่รองรับภาษาไทย, tabular numerals เท่าที่มี, focus ring สีทอง และสื่อความหมายกำไร/ขาดทุนด้วยข้อความและเครื่องหมาย ไม่พึ่งสีอย่างเดียว
 
+## ธีมทดลองตามคำขอล่าสุด — เฉพาะหน้า Overview
+
+ตีความ “น้วเงืนเข้มเงา” ว่าเป็น **น้ำเงินเข้มเงาโลหะ** และ “Background สีสว่างเหมือนทองจริง” ว่าเป็นพื้นโทนแชมเปญ/ทองอ่อนสว่าง โดยใช้ navy `#10243B` / `#1D3B58`, background `#F2E6BC` / `#EAD69B`, surface `#FFF9E9`, border `#D8C481`, text `#172B40` และ gold `#BD902D` / `#E5C45C`. ให้ทดลองเฉพาะแท็บภาพรวม (รวม shell/navigation ขณะอยู่แท็บนี้) ผ่าน class แบบ scoped; แท็บสินทรัพย์ ราคา และสำรองคงธีมเดิมแดงทับทิม/พื้นเข้มจนกว่าผู้ใช้จะอนุมัติขยายธีม
+
 ## Privacy, optimization และ rollout
 
 `index.html` ใช้ `noindex, nofollow, noarchive`; records คงอยู่ใน browser และควรสำรองเป็น JSON ผู้ใช้ต้องทดสอบ/เก็บ backup ข้ามอุปกรณ์เอง MVP ผ่าน TypeScript/Vite production build และตรวจ Preview ทั้งมือถือ/desktop แล้ว แต่ full WCAG 2.2 AA audit, Core Web Vitals บน production, browser/device matrix และ static deployment ยังรอ
