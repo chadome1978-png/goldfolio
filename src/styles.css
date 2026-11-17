@@ -1078,3 +1078,125 @@ body:has(.app-shell.home-theme-preview) ::selection { color: #FFF8EE; background
 .home-theme-preview .detail-note { background: #F4E4B0; }
 .home-theme-preview .detail-note span { color: #4A3717; }
 .home-theme-preview .detail-note p { color: #2B220F; }
+
+
+/* Official price sync status */
+.price-sync-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #FFFFFF26;
+  color: #F4DFD8;
+  font-size: 12px;
+}
+.price-sync-label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-weight: 700; }
+.price-sync-label i { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #DAB8A8; box-shadow: 0 0 0 3px #FFFFFF1C; }
+.price-sync-current .price-sync-label i { background: #6ED7A0; box-shadow: 0 0 0 3px #6ED7A02B; }
+.price-sync-stale .price-sync-label i,
+.price-sync-manual .price-sync-label i { background: #F2D078; box-shadow: 0 0 0 3px #F2D0782B; }
+.price-sync-error .price-sync-label i { background: #FF756F; box-shadow: 0 0 0 3px #FF756F2B; }
+.price-sync-time { color: #E8D0C9; font-size: 11px; }
+.price-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 1px solid #FFFFFF55;
+  border-radius: 9px;
+  color: #FFF8EE;
+  background: #FFFFFF14;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.price-refresh-button:hover:not(:disabled) { background: #FFFFFF27; }
+.price-refresh-button:focus-visible { outline: 3px solid #FFE08A; outline-offset: 2px; }
+.price-refresh-button:disabled { opacity: .72; cursor: wait; }
+.price-refresh-button .is-spinning { animation: price-refresh-spin .9s linear infinite; }
+@keyframes price-refresh-spin { to { transform: rotate(360deg); } }
+
+.home-theme-preview .price-sync-row { border-top-color: #8E1B2B30; color: #4A3717; }
+.home-theme-preview .price-sync-time { color: #5A4728; }
+.home-theme-preview .price-sync-current .price-sync-label { color: #185B3A; }
+.home-theme-preview .price-sync-stale .price-sync-label,
+.home-theme-preview .price-sync-manual .price-sync-label { color: #684A0C; }
+.home-theme-preview .price-sync-error .price-sync-label { color: #76121F; }
+.home-theme-preview .price-refresh-button { border-color: #8E1B2B77; color: #76121F; background: #FFF8E8D8; }
+.home-theme-preview .price-refresh-button:hover:not(:disabled) { background: #FFFFFF; }
+.home-theme-preview .price-refresh-button:focus-visible { outline-color: #731421; }
+
+@media (max-width: 680px) {
+  .price-sync-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; }
+  .price-sync-time { grid-column: 1 / -1; grid-row: 2; }
+  .price-sync-label { font-size: 11px; }
+  .price-refresh-button { grid-column: 2; grid-row: 1; min-height: 36px; }
+}
+
+
+/* Compact connection state inside the market-price panel */
+.market-head { align-items: flex-start; flex-wrap: wrap; }
+.market-heading { min-width: 0; flex: 1 1 230px; }
+.market-kicker-line { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 8px; }
+.price-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid #FFFFFF2B;
+  border-radius: 999px;
+  color: #F4E9E3;
+  background: #FFFFFF16;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.price-status-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #DAB8A8; }
+.price-status-badge.price-sync-current { color: #D5F3E1; border-color: #79D7A155; background: #1C704A; }
+.price-status-badge.price-sync-current .price-status-dot { background: #8EE2AF; }
+.price-status-badge.price-sync-stale,
+.price-status-badge.price-sync-manual { color: #FFE8AC; border-color: #F2D07855; background: #5A4720; }
+.price-status-badge.price-sync-stale .price-status-dot,
+.price-status-badge.price-sync-manual .price-status-dot { background: #F2D078; }
+.price-status-badge.price-sync-error { color: #FFD7D3; border-color: #FF756F55; background: #722B31; }
+.price-status-badge.price-sync-error .price-status-dot { background: #FF8A82; }
+.market-head-actions { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: 7px; }
+.market-head-actions .price-refresh-button { min-height: 32px; padding: 4px 9px; font-size: 11px; }
+.quote-foot { flex-wrap: wrap; }
+.quote-foot .price-sync-time { font-size: 10px; line-height: 1.5; }
+
+.home-theme-preview .price-status-badge { border-color: #8E1B2B22; color: #4A3717; background: #FFF4D4; }
+.home-theme-preview .price-status-dot { background: #8E1B2B; }
+.home-theme-preview .price-status-badge.price-sync-current { border-color: #26734B44; color: #185B3A; background: #DDF0D8; }
+.home-theme-preview .price-status-badge.price-sync-current .price-status-dot { background: #218B55; }
+.home-theme-preview .price-status-badge.price-sync-stale,
+.home-theme-preview .price-status-badge.price-sync-manual { border-color: #A5771044; color: #684A0C; background: #FFF0C2; }
+.home-theme-preview .price-status-badge.price-sync-stale .price-status-dot,
+.home-theme-preview .price-status-badge.price-sync-manual .price-status-dot { background: #A57710; }
+.home-theme-preview .price-status-badge.price-sync-error { border-color: #A5263744; color: #76121F; background: #F7D8D8; }
+.home-theme-preview .price-status-badge.price-sync-error .price-status-dot { background: #A52637; }
+.home-theme-preview .quote-foot .price-sync-time { color: #5A4728; }
+
+@media (max-width: 680px) {
+  .market-head { align-items: flex-start; gap: 8px; }
+  .market-heading { flex-basis: 200px; }
+  .market-head-actions { margin-left: auto; gap: 6px; }
+  .market-head-actions .price-refresh-button { min-height: 36px; }
+  .quote-foot { align-items: flex-start; flex-direction: column; gap: 5px; }
+}
+
+@media (max-width: 480px) {
+  .market-kicker-line { gap: 4px 6px; }
+  .price-status-badge { padding: 3px 7px; font-size: 10px; }
+  .market-head-actions .price-refresh-label { display: none; }
+  .market-head-actions .price-refresh-button { width: 36px; min-width: 36px; padding: 0; }
+  .market-head-actions .button { white-space: nowrap; }
+}

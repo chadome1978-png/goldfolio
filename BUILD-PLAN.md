@@ -1,43 +1,43 @@
 # ทองพอร์ต — Build Plan และ Launch Checklist
 
-**สถานะ:** MVP ทำงานได้ใน Preview และ build ผ่านแล้ว · **ยังไม่เผยแพร่**  
-**ประมาณการ:** 4 สัปดาห์นับจากเริ่ม Discovery; เป็นแผนโดยประมาณ เพราะยังไม่ได้กำหนด timeline จริง  
-**การตัดสินใจสำคัญ:** แอปเป็น static client-side เท่านั้น ปิด managed server และ database ตามที่ผู้ใช้เลือก; ราคาสมาคมฯ จึงกรอกเอง ไม่ใช่ราคาสดอัตโนมัติ
+**สถานะ:** strict TypeScript/Vite build, official-price parser fixtures, API/health/static smoke test และภาพ Preview desktop/mobile ผ่านแล้ว; config hybrid พร้อมใช้งาน · **ยังไม่เผยแพร่**
+**ระยะเวลาเดิม:** แผนประมาณ 4 สัปดาห์นับจาก Discovery; ไม่มีวันเผยแพร่ที่กำหนด
+
+**ขอบเขตระบบ:** server เปิดเพื่อ proxy ราคาสมาคมฯ เท่านั้น; `database` ปิด, holdings/ต้นทุน/attachments อยู่ IndexedDB ใน browser และ `auto_publish` ปิด. หน้า Dashboard ดึงราคาเมื่อเปิดแอปและทุก 2 นาทีระหว่างเปิดใช้งาน ไม่ใช่ราคา tick-by-tick
 
 ## Build Plan รายสัปดาห์
 
 | สัปดาห์ | งาน | สถานะ/ผลลัพธ์ |
 |---|---|---|
-| 1 — Discovery, Strategy, Design | ยืนยันผู้ใช้ส่วนตัวและข้อมูลที่ติดตาม; วางโครงหน้า Dashboard, รายการทอง, ราคาอ้างอิง, สำรอง/กู้คืน; ตรวจแหล่งราคาสมาคมฯ และข้อจำกัด CORS; อนุมัติ Dark Mode สีแดงทับทิม–ทอง | **เสร็จแล้ว** — ผู้ใช้ยืนยันแบบและเริ่มพัฒนา; พบว่า endpoint ทางการไม่มี `Access-Control-Allow-Origin` และผู้ใช้เลือกไม่เปิด server |
-| 2 — Core App | สร้าง responsive shell, Dashboard, สรุปทองแท่ง/รูปพรรณ, เพิ่ม/แก้ไข/ลบ, หน้ารายละเอียด, ค้นหา/กรอง/เรียง และ IndexedDB | **เสร็จแล้ว** — CRUD และรายละเอียดทดสอบบน Preview ด้วยข้อมูลชั่วคราวแล้ว และล้างข้อมูลทดสอบออก |
-| 3 — ราคาและการคำนวณ | เพิ่มฟอร์มราคาที่ผู้ใช้บันทึกเอง, แสดงราคากับวันเวลา, สถานะราคาเกิน 24 ชั่วโมง, คำนวณต้นทุน/มูลค่า/กำไรขาดทุน, export/import JSON | **เสร็จแล้วระดับ MVP** — ทดสอบราคาจำลองและเวลาไทย (Asia/Bangkok), สูตรผลต่าง, ดาวน์โหลดและนำเข้าไฟล์ backup แล้ว; ไม่ได้อ้างว่าราคาทดสอบเป็นราคาตลาด |
-| 4 — Optimize, QA และ Launch | ตรวจ WCAG 2.2, keyboard/focus, zoom, contrast, Core Web Vitals, browser/device compatibility; ทดสอบกับราคาจริงที่ผู้ใช้ตรวจจากสมาคมฯ; เลือก static host, backup ขั้นสุดท้ายและเผยแพร่หลังอนุมัติ | **รอดำเนินการ** — ยังไม่ทำ full accessibility audit/วัด CWV บน production, ยังไม่เลือก host และยังไม่เผยแพร่ |
+| 1 — Discovery, Strategy, Design | ยืนยันผู้ใช้ส่วนตัวและสิ่งที่ติดตาม; ออกแบบ Dashboard, holdings, quote, backup; ตรวจ API สมาคมฯ/CORS; อนุมัติธีมทอง–แดงและฟอร์มซื้อเข้า | **เสร็จแล้ว** — ขอบเขต local portfolio + public-price proxy ยืนยันแล้ว; auto-publish ยังปิด |
+| 2 — Core App | Responsive shell, Dashboard, CRUD, รายละเอียดทอง, รูป/ใบรับประกัน, IndexedDB และ backup JSON | **เสร็จแล้ว** — flow CRUD และ attachments ทดสอบใน Preview ด้วยไฟล์ QA แล้วล้างข้อมูลจำลอง |
+| 3 — ราคาและการคำนวณ | Node same-origin proxy, normalize record ล่าสุดจาก endpoint ทางการ, polling ทุก 2 นาที, manual fallback, Dashboard re-calculation และแสดงสถานะ/freshness | **เสร็จแล้ว** — official endpoint, parser และ auto-refresh ผ่าน smoke/regression checks; สถานะเชื่อมต่อถูกรวมเป็น badge ในการ์ดราคาทองและตรวจ desktop/mobile แล้ว |
+| 4 — Optimize, QA และ Launch | ตรวจ Docker/container, error fallback, accessibility/device audit, Core Web Vitals และเผยแพร่หลังผู้ใช้อนุมัติ | **รอดำเนินการ** — config hybrid build/deploy/routes ประกาศไว้แล้ว; ยังไม่ publish, ไม่ได้วัด production CWV และยังไม่ทำ full WCAG/device audit |
 
 ## Launch Checklist
 
-### เสร็จแล้วในรอบ MVP
+### เสร็จแล้ว
 
-- [x] ยืนยันขอบเขต static app; ตรวจ config ว่า `server: false`, `database: false` และ `auto_publish: false`
-- [x] สร้าง Dashboard responsive สำหรับ desktop และมือถือ พร้อมตัวเลขรวม สัดส่วน และสรุปผลแยกตามทองแท่ง/รูปพรรณ
-- [x] สร้างฟอร์มรายการทอง รายละเอียด แก้ไข และลบ; ทดสอบ flow CRUD ใน Preview
-- [x] ทดสอบต้นทุนรวม = จำนวน × น้ำหนัก × ราคาซื้อต่อบาททองคำ + ต้นทุนเพิ่มเติม และผลต่างกับราคาประเมินด้วยข้อมูลจำลอง
-- [x] สร้างฟอร์มราคาสมาคมฯ แบบกรอกเอง: ทองแท่งรับซื้อ/ขายออก และทองรูปพรรณฐานภาษี/ขายออก พร้อมเวลาไทยและลิงก์ต้นทาง
-- [x] ยืนยันหน้า app และ route manifest ตอบ HTTP 200; `pnpm build` ผ่าน TypeScript และ Vite
-- [x] ทดสอบ JSON backup export/import; แจ้งผู้ใช้ว่าข้อมูลอยู่ใน browser นี้และอาจสูญหายเมื่อล้าง browser/เปลี่ยนอุปกรณ์
-- [x] ตั้ง `noindex, nofollow, noarchive` และไม่ส่งรายการทอง/ต้นทุนผ่านโค้ด analytics ของแอป
-- [x] ตรวจภาพ Preview ที่ viewport มือถือ 390px และ desktop 1440px; ปรับขนาดตัวอักษรเล็กให้ใหญ่ขึ้น
+- [x] ยืนยันสถาปัตยกรรม quote proxy แบบจำกัดขอบเขต: server สำหรับดึงราคาสาธารณะเท่านั้น, `database: false`, `auto_publish: false`
+- [x] Dashboard responsive พร้อมมูลค่า ต้นทุน กำไร/ขาดทุนโดยประมาณ น้ำหนัก สัดส่วน และสรุปประเภททอง
+- [x] Holdings CRUD, หน้ารายละเอียด, รูปทอง/ใบรับประกันภาพหรือ PDF และ backup/restore local-only
+- [x] สร้าง shared parser สำหรับ record ล่าสุดของ API ทางการ; mapping ฟิลด์ราคาและแปลง `asTime` เป็นเวลาไทย; ปฏิเสธ record ล่าสุดที่ผิดรูปแบบ/เวลาอนาคตแทนการย้อนไปใช้ราคาที่เก่ากว่า
+- [x] เพิ่ม frontend auto-refresh เมื่อเปิดแอป/ทุก 2 นาทีขณะ visible, ปุ่ม refresh, error/stale state และ manual fallback
+- [x] บันทึก quote ล่าสุดลง IndexedDB; ไม่ส่งข้อมูลรายการทอง ต้นทุน รูป หรือใบรับประกันไป server
+- [x] WebDev hybrid build/deploy/routes กำหนดให้ health/API ไป server และ SPA ไป static; auto-publish ยังคงปิด
+- [x] TypeScript/Vite production build ผ่าน; API endpoint จริงตอบกลับและบันทึกแหล่งข้อมูล/ข้อจำกัดใน `PRICE-SOURCE.md`
+- [x] ตรวจ production Node smoke ที่ health/API/static route และตรวจ UI Preview 1280px/390px; สถานะเชื่อมต่อ/เวลา/รีเฟรชรวมกับส่วนราคาทอง
 
-### ยังต้องทำก่อนใช้งานจริง/เผยแพร่
+### ต้องทำก่อนเผยแพร่
 
-- [ ] ทำ manual WCAG 2.2 AA audit ครบ: คีย์บอร์ดทุกหน้าจอ, focus order/visibility, zoom 200%, screen reader labels, contrast และขนาด touch target
-- [ ] ทดสอบบนอุปกรณ์จริงและ browser หลัก (Safari/iOS, Chrome/Android, desktop) รวมการคงอยู่ของ IndexedDB หลัง reload และ storage quota
-- [ ] ทดลองกรอกราคาจริงจากสมาคมค้าทองคำและตรวจ label/วันเวลา/วิธีประเมินด้วยผู้ใช้; อย่าป้อนราคาจำลองเป็นราคาตลาด
-- [ ] ทดสอบราคาเกิน 24 ชั่วโมงและกรณีข้อมูลไม่ครบ/สำรองผิดรูปแบบในรอบ QA ขั้นสุดท้าย
-- [ ] วัด LCP < 2.5s, INP < 200ms, CLS < 0.1 หลังเลือก hosting และทดสอบบน production URL
-- [ ] เลือก static hosting และทบทวน privacy/backup ของแพลตฟอร์ม; ยังไม่มีการเผยแพร่ในตอนนี้
-- [ ] ขออนุมัติแยกต่างหากก่อน publish; การเผยแพร่และการเปิด server เป็นคนละการตัดสินใจ โดยรุ่นนี้ไม่เปิด managed server
-- [ ] หากภายหลังต้องการราคาสดอัตโนมัติ ให้ตรวจแหล่งราคา/สิทธิ์และขออนุมัติ server ก่อนออกแบบ proxy; รุ่นนี้ไม่เรียก API ราคาจาก browser
+- [ ] ทดสอบ upstream failure ผ่าน proxy จริงและยืนยันว่า quote ล่าสุดไม่หาย; parser fixture ปัจจุบันทดสอบ malformed/future record แต่ไม่แทนการทดสอบ outage จริง
+- [ ] สร้างและรัน Docker image สำหรับ production container; smoke-test `/_app/health`, API และ SPA ภายใน container (ก่อนหน้านี้ทดสอบ Node server โดยตรงในเครื่องเท่านั้น)
+- [ ] ตรวจ keyboard/focus, zoom 200%, screen-reader labels, contrast และ target size (WCAG 2.2 AA) บนมือถือ/desktop
+- [ ] ทดสอบ Safari/iOS, Chrome/Android, storage quota, backup round-trip และ old backup compatibility
+- [ ] วัด LCP < 2.5s, INP < 200ms, CLS < 0.1 หลังเลือก hostและตรวจบน production URL
+- [ ] ให้ผู้ใช้ตรวจความหมาย source timestamp, manual fallback, stale/error states และฐานภาษีรูปพรรณ
+- [ ] ขออนุมัติแยกก่อน publish; การเปิด server เพื่อ proxy ไม่ได้หมายถึงอนุมัติการเผยแพร่
 
-## ขอบเขตการทำงานปัจจุบัน
+## ขอบเขตและข้อควรทราบ
 
-ข้อมูลรายการทองและราคาที่บันทึกอยู่ใน IndexedDB ของ browser บนอุปกรณ์นั้น ไม่มีบัญชีหรือ cloud sync การเปลี่ยนอุปกรณ์ต้องนำเข้า backup เอง ราคาสมาคมฯ ไม่ได้ดึงอัตโนมัติ และราคาทองรูปพรรณที่ใช้ประเมินเป็น **ฐานภาษีอ้างอิง** ไม่ใช่ราคารับซื้อคืนที่ร้านรับประกัน มูลค่าจริงอาจขึ้นกับน้ำหนัก ความบริสุทธิ์ สภาพทอง และเงื่อนไขร้าน
+ข้อมูลรายการทอง/ต้นทุนและ attachments อยู่ใน IndexedDB ของอุปกรณ์ ไม่มีบัญชีหรือ cloud sync; server เห็นเฉพาะคำขอราคาอ้างอิงสาธารณะและไม่เก็บพอร์ต. ราคาใช้ record ล่าสุดที่สมาคมฯ เผยแพร่: ทองแท่งใช้ราคาซื้อคืน/รับซื้ออ้างอิง; ทองรูปพรรณใช้ฐานภาษีตามที่ประกาศ ไม่ใช่ราคาที่ร้านรับซื้อคืนรับประกัน. Dashboard ตรวจ endpoint ทุก 2 นาทีขณะเปิดแอป แต่สมาคมฯ เป็นผู้กำหนดจังหวะประกาศ จึงไม่ใช่ข้อมูลแบบ tick-by-tick. เมื่อ API ใช้ไม่ได้ แอปแสดงสถานะและคง quote ล่าสุดในอุปกรณ์.

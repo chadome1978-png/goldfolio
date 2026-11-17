@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle, ArrowDownUp, ArrowDownRight, ArrowUpRight, BarChart3, CalendarDays,
   Check, ChevronRight, CircleDollarSign, Coins, Download, ExternalLink, Eye, FileUp,
-  LayoutDashboard, Package, Pencil, Plus, Search, ShieldCheck, Trash2, X,
+  LayoutDashboard, Package, Pencil, Plus, RefreshCw, Search, ShieldCheck, Trash2, X,
 } from 'lucide-react';
 import HoldingForm from './components/HoldingForm';
 import HoldingDetails from './components/HoldingDetails';
 import CategoryBreakdown from './components/CategoryBreakdown';
 import QuoteForm from './components/QuoteForm';
 import { holdingCost, holdingProfit, holdingValue, totalWeight, totals } from './features/holdings/calculations';
+import { fetchOfficialPrice } from './features/prices/api';
 import { quoteIsComplete, quoteIsStale } from './features/prices/quote';
 import { currency, decimal, formatDate, formatDateTime } from './lib/format';
 import { getHoldings, getQuote, removeHolding, replaceAllHoldings, saveHolding, saveQuote } from './lib/storage/db';
@@ -16,6 +17,7 @@ import type { AppTab, Holding, HoldingAttachment, ManualQuote } from './types';
 
 const emptyQuote: ManualQuote = { barBuy: null, barSell: null, ornamentBuy: null, ornamentSell: null, quotedAt: '', sourceUrl: 'https://www.goldtraders.or.th/' };
 const sourceUrl = 'https://www.goldtraders.or.th/';
+type QuoteSyncStatus = 'loading' | 'current' | 'stale' | 'error' | 'manual';
 
 function money(value: number | null | undefined): string {
   return value === null || value === undefined || !Number.isFinite(value) ? '—' : currency.format(value);
@@ -39,19 +41,59 @@ function StatCard({ label, value, note, icon, tone = '' }: { label: string; valu
   return <article className="stat-card"><div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div><strong className={`stat-value ${tone}`}>{value}</strong><span className="stat-note">{note}</span></article>;
 }
 
-function QuotePanel({ quote, onEdit, compact = false }: { quote: ManualQuote; onEdit: () => void; compact?: boolean }) {
+function QuotePanel({ quote, onEdit, onRefresh, status, lastCheckedAt, refreshing, compact = false }: {
+  quote: ManualQuote;
+  onEdit: () => void;
+  onRefresh: () => void;
+  status: QuoteSyncStatus;
+  lastCheckedAt: string | null;
+  refreshing: boolean;
+  compact?: boolean;
+}) {
   const complete = quoteIsComplete(quote);
   const stale = complete && quoteIsStale(quote);
+  const statusLabels: Record<QuoteSyncStatus, string> = {
+    loading: 'กำลังเชื่อมต่อ',
+    current: 'เชื่อมต่อแล้ว',
+    stale: 'ใช้ราคาล่าสุด',
+    error: 'เชื่อมต่อไม่ได้',
+    manual: 'ราคาสำรอง',
+  };
+  const statusDescriptions: Record<QuoteSyncStatus, string> = {
+    loading: 'กำลังตรวจราคาจากสมาคมค้าทองคำ',
+    current: 'เชื่อมต่อสมาคมค้าทองคำแล้ว',
+    stale: 'ใช้สำเนาราคาล่าสุด · ต้นทางตอบช้า',
+    error: 'เชื่อมต่อไม่ได้ · ใช้ราคาในอุปกรณ์ถ้ามี',
+    manual: 'ใช้ราคาที่กรอกเองชั่วคราว',
+  };
+  const displayTime = quote.fetchedAt ?? lastCheckedAt;
+  const timeLabel = status === 'error' && quote.fetchedAt ? 'ดึงสำเร็จล่าสุด' : status === 'manual' ? 'ตรวจระบบล่าสุด' : 'ดึงข้อมูลล่าสุด';
   return <section className={`market-card ${compact ? 'market-card-compact' : ''}`} aria-labelledby="market-title">
-    <div className="market-head"><div><span className="market-kicker"><span className="live-dot" /> ราคาอ้างอิง · สมาคมค้าทองคำ</span><h2 id="market-title">ราคาทองคำ 96.5%</h2></div><button className="button button-light button-small" onClick={onEdit}><Pencil size={14} /> {complete ? 'แก้ไขราคา' : 'กรอกราคา'}</button></div>
+    <div className="market-head">
+      <div className="market-heading">
+        <div className="market-kicker-line">
+          <span className="market-kicker">ราคาอ้างอิง · สมาคมค้าทองคำ</span>
+          <span className={`price-status-badge price-sync-${status}`} role="status" aria-live="polite" title={statusDescriptions[status]}><i className="price-status-dot" aria-hidden="true" />{statusLabels[status]}</span>
+        </div>
+        <h2 id="market-title">ราคาทองคำ 96.5%</h2>
+      </div>
+      <div className="market-head-actions">
+        <button className="button button-light button-small" onClick={onEdit}><Pencil size={14} /> กรอกราคาสำรอง</button>
+        <button type="button" className="price-refresh-button" onClick={onRefresh} disabled={refreshing} aria-label="รีเฟรชราคาสมาคมค้าทองคำ"><RefreshCw size={14} className={refreshing ? 'is-spinning' : ''} /><span className="price-refresh-label">{refreshing ? 'กำลังตรวจ' : 'รีเฟรช'}</span></button>
+      </div>
+    </div>
     {complete ? <>
       <div className="quote-grid">
         <div className="quote-type"><div className="quote-type-title"><span className="quote-glyph">แท่ง</span><strong>ทองคำแท่ง</strong></div><div className="quote-pair"><div><span>รับซื้อ</span><b>{money(quote.barBuy)}</b></div><div><span>ขายออก</span><b>{money(quote.barSell)}</b></div></div></div>
         <div className="quote-type"><div className="quote-type-title"><span className="quote-glyph">รูป</span><strong>ทองรูปพรรณ</strong></div><div className="quote-pair"><div><span>ฐานภาษี</span><b>{money(quote.ornamentBuy)}</b></div><div><span>ขายออก</span><b>{money(quote.ornamentSell)}</b></div></div></div>
       </div>
-      <div className={`quote-foot ${stale ? 'quote-stale' : ''}`}><span>{stale ? <AlertTriangle size={14} /> : <Check size={14} />} {stale ? 'ราคาอ้างอิงเกิน 24 ชั่วโมง · กรุณาตรวจสอบใหม่' : `ระบุราคาอ้างอิงเมื่อ ${formatDateTime(quote.quotedAt)}`}</span><a href={sourceUrl} target="_blank" rel="noreferrer">เปิดแหล่งทางการ <ExternalLink size={13} /></a></div>
-    </> : <div className="quote-empty"><div><strong>ยังไม่ได้บันทึกราคาอ้างอิง</strong><p>ตรวจราคาและเวลาประกาศจากสมาคมฯ แล้วกรอกข้อมูลเพื่อคำนวณมูลค่าพอร์ต</p><a href={sourceUrl} target="_blank" rel="noreferrer">เปิดเว็บสมาคมค้าทองคำ <ExternalLink size={14} /></a></div><span className="quote-empty-icon"><CircleDollarSign size={28} /></span></div>}
-    {!compact && <div className="manual-hint"><AlertTriangle size={14} /> อัปเดตราคาเองจากหน้าเว็บสมาคมฯ · แอปไม่ดึงราคาอัตโนมัติ</div>}
+      <div className="quote-foot">
+        <span className={stale ? 'quote-stale' : ''}>{stale ? <AlertTriangle size={14} /> : <Check size={14} />} {stale ? 'ราคาอ้างอิงเกิน 24 ชั่วโมง · กรุณาตรวจสอบใหม่' : `ประกาศล่าสุด ณ ${formatDateTime(quote.quotedAt)}`}</span>
+        {displayTime && <span className="price-sync-time">{timeLabel} {formatDateTime(displayTime)}</span>}
+        <a href={sourceUrl} target="_blank" rel="noreferrer">เปิดแหล่งทางการ <ExternalLink size={13} /></a>
+      </div>
+    </> : <div className="quote-empty"><div><strong>{status === 'error' ? 'ยังดึงราคาอ้างอิงไม่ได้' : 'กำลังโหลดราคาอ้างอิง'}</strong><p>{status === 'error' ? 'กดลองรีเฟรชอีกครั้ง หรือกรอกราคาสำรองจากประกาศสมาคมฯ' : 'กำลังตรวจราคาประกาศล่าสุดจากสมาคมค้าทองคำ'}</p><a href={sourceUrl} target="_blank" rel="noreferrer">เปิดเว็บสมาคมค้าทองคำ <ExternalLink size={14} /></a></div><span className="quote-empty-icon"><CircleDollarSign size={28} /></span></div>}
+    {!compact && <div className="manual-hint"><AlertTriangle size={14} /> คำนวณจากราคาประกาศ ไม่ใช่ราคาซื้อขายรับประกัน · ตรวจอัตโนมัติทุก 2 นาทีขณะเปิดแอป</div>}
   </section>;
 }
 
@@ -80,12 +122,59 @@ export default function App() {
   const [kindFilter, setKindFilter] = useState<'all' | Holding['kind']>('all');
   const [sortBy, setSortBy] = useState('date');
   const importRef = useRef<HTMLInputElement>(null);
+  const refreshPricesRef = useRef<() => Promise<void>>(async () => {});
+  const [priceStatus, setPriceStatus] = useState<QuoteSyncStatus>('loading');
+  const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    Promise.all([getHoldings(), getQuote()]).then(([items, currentQuote]) => {
+    let active = true;
+    let localLoaded = false;
+    let refreshInProgress = false;
+    const refresh = async () => {
+      if (!active || refreshInProgress) return;
+      refreshInProgress = true;
+      setRefreshing(true);
+      setPriceStatus('loading');
+      setLastCheckedAt(new Date().toISOString());
+      try {
+        const snapshot = await fetchOfficialPrice();
+        await saveQuote(snapshot.quote);
+        if (!active) return;
+        setQuote(snapshot.quote);
+        setLastCheckedAt(snapshot.fetchedAt);
+        setPriceStatus(snapshot.stale ? 'stale' : 'current');
+      } catch {
+        if (active) setPriceStatus('error');
+      } finally {
+        refreshInProgress = false;
+        if (active) setRefreshing(false);
+      }
+    };
+    refreshPricesRef.current = refresh;
+    void Promise.all([getHoldings(), getQuote()]).then(([items, currentQuote]) => {
+      if (!active) return;
       setHoldings(items.sort((a, b) => b.purchasedAt.localeCompare(a.purchasedAt)));
       setQuote(currentQuote);
-    }).catch(() => setError('อ่านข้อมูลในอุปกรณ์ไม่สำเร็จ กรุณาลองเปิดแอปอีกครั้ง')).finally(() => setBusy(false));
+      setBusy(false);
+      localLoaded = true;
+      void refresh();
+    }).catch(() => {
+      if (active) { setError('อ่านข้อมูลในอุปกรณ์ไม่สำเร็จ กรุณาลองเปิดแอปอีกครั้ง'); setBusy(false); }
+    });
+    const timer = window.setInterval(() => {
+      if (localLoaded && document.visibilityState === 'visible') void refresh();
+    }, 120_000);
+    const onVisibilityChange = () => {
+      if (localLoaded && document.visibilityState === 'visible') void refresh();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      refreshPricesRef.current = async () => {};
+    };
   }, []);
 
   const summary = useMemo(() => totals(holdings, quote), [holdings, quote]);
@@ -119,9 +208,11 @@ export default function App() {
   }
 
   async function handleSaveQuote(nextQuote: ManualQuote) {
-    await saveQuote(nextQuote);
-    setQuote(nextQuote);
-    setMessage('บันทึกราคาอ้างอิงแล้ว');
+    const manualQuote: ManualQuote = { ...nextQuote, source: 'manual', fetchedAt: undefined };
+    await saveQuote(manualQuote);
+    setQuote(manualQuote);
+    setPriceStatus('manual');
+    setMessage('บันทึกราคาสำรองแล้ว · ระบบจะกลับไปใช้ราคาสมาคมฯ เมื่อเชื่อมต่อได้');
   }
 
   function exportBackup() {
@@ -175,8 +266,8 @@ export default function App() {
         {busy ? <div className="loading-state"><span className="spinner" />กำลังเปิดพอร์ตทองของคุณ…</div> : <>
           {tab === 'overview' && <>
             <div className="page-heading"><div><span className="eyebrow">PRIVATE PORTFOLIO · {formatDate(new Date().toISOString())}</span><h1>ภาพรวมพอร์ตทอง</h1><p>ติดตามมูลค่า ต้นทุน และผลตอบแทนของทองที่คุณถือครอง</p></div><button className="button button-primary" onClick={() => setHoldingDialog('new')}><Plus size={17} />เพิ่มรายการทอง</button></div>
-            <QuotePanel quote={quote} onEdit={() => setQuoteDialog(true)} />
-            <div className="stats-grid"><StatCard label="มูลค่าพอร์ตโดยประมาณ" value={quoteIsComplete(quote) ? money(summary.value) : 'รอราคาอ้างอิง'} note="ประเมินจากราคาฐานภาษี/รับซื้ออ้างอิงที่บันทึกไว้" icon={<CircleDollarSign size={18} />} /><StatCard label="ต้นทุนรวม" value={money(summary.cost)} note={`${holdings.length} รายการในพอร์ต`} icon={<Coins size={18} />} /><StatCard label={totalProfit === null ? 'กำไร/ขาดทุนโดยประมาณ' : totalProfit >= 0 ? 'กำไรโดยประมาณ' : 'ขาดทุนโดยประมาณ'} value={totalProfit === null ? 'รอราคาอ้างอิง' : `${totalProfit >= 0 ? '+' : '−'}${currency.format(Math.abs(totalProfit))}`} note={totalProfit === null || summary.cost === 0 ? 'บันทึกราคาเพื่อคำนวณผลต่าง' : `${totalProfit >= 0 ? '+' : ''}${((totalProfit / summary.cost) * 100).toFixed(2)}% จากต้นทุน`} icon={totalProfit !== null && totalProfit < 0 ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />} tone={totalProfit === null ? '' : totalProfit >= 0 ? 'tone-positive' : 'tone-negative'} /><StatCard label="น้ำหนักรวม" value={`${decimal.format(totalWeight(holdings))} บาท`} note={`${summary.barCount} รายการแท่ง · ${summary.ornamentCount} รายการรูปพรรณ`} icon={<Package size={18} />} /></div>
+            <QuotePanel quote={quote} onEdit={() => setQuoteDialog(true)} onRefresh={() => void refreshPricesRef.current()} status={priceStatus} lastCheckedAt={lastCheckedAt} refreshing={refreshing} />
+            <div className="stats-grid"><StatCard label="มูลค่าพอร์ตโดยประมาณ" value={quoteIsComplete(quote) ? money(summary.value) : 'รอราคาอ้างอิง'} note={quote.source === 'association' ? `ประเมินจากราคาสมาคมฯ ณ ${formatDateTime(quote.quotedAt)}` : 'ประเมินจากราคาสำรองล่าสุดที่มีในอุปกรณ์'} icon={<CircleDollarSign size={18} />} /><StatCard label="ต้นทุนรวม" value={money(summary.cost)} note={`${holdings.length} รายการในพอร์ต`} icon={<Coins size={18} />} /><StatCard label={totalProfit === null ? 'กำไร/ขาดทุนโดยประมาณ' : totalProfit >= 0 ? 'กำไรโดยประมาณ' : 'ขาดทุนโดยประมาณ'} value={totalProfit === null ? 'รอราคาอ้างอิง' : `${totalProfit >= 0 ? '+' : '−'}${currency.format(Math.abs(totalProfit))}`} note={totalProfit === null || summary.cost === 0 ? 'รอราคาสมาคมฯ เพื่อคำนวณผลต่าง' : `${totalProfit >= 0 ? '+' : ''}${((totalProfit / summary.cost) * 100).toFixed(2)}% จากต้นทุน`} icon={totalProfit !== null && totalProfit < 0 ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />} tone={totalProfit === null ? '' : totalProfit >= 0 ? 'tone-positive' : 'tone-negative'} /><StatCard label="น้ำหนักรวม" value={`${decimal.format(totalWeight(holdings))} บาท`} note={`${summary.barCount} รายการแท่ง · ${summary.ornamentCount} รายการรูปพรรณ`} icon={<Package size={18} />} /></div>
             <div className="overview-grid">
               <section className="panel allocation-panel">
                 <div className="panel-heading"><div><h2>สัดส่วนสินทรัพย์</h2><p>เปรียบเทียบน้ำหนักทองตามประเภท</p></div><span className="panel-icon"><BarChart3 size={17} /></span></div>
@@ -189,7 +280,7 @@ export default function App() {
               </section>
             </div>
             <CategoryBreakdown holdings={holdings} quote={quote} />
-            <div className="footnote"><AlertTriangle size={14} />มูลค่าและกำไร/ขาดทุนเป็นการประมาณจากราคาที่คุณกรอก ไม่ใช่ราคาซื้อขายรับประกัน · ราคาต้องอัปเดตด้วยตนเอง</div>
+            <div className="footnote"><AlertTriangle size={14} />มูลค่าและกำไร/ขาดทุนเป็นการประมาณจากราคารับซื้อ/ฐานภาษีที่สมาคมฯ ประกาศล่าสุด ไม่ใช่ราคาซื้อขายรับประกัน · ราคาอัปเดตตามรอบประกาศของสมาคมฯ</div>
           </>}
 
           {tab === 'holdings' && <>
@@ -200,20 +291,20 @@ export default function App() {
           </>}
 
           {tab === 'prices' && <>
-            <div className="page-heading"><div><span className="eyebrow">GOLD TRADERS ASSOCIATION</span><h1>ราคาอ้างอิง</h1><p>ราคาที่คุณบันทึกจากประกาศสมาคมค้าทองคำ</p></div><button className="button button-primary" onClick={() => setQuoteDialog(true)}><Pencil size={16} />{quoteIsComplete(quote) ? 'แก้ไขราคา' : 'กรอกราคา'}</button></div>
-            <QuotePanel quote={quote} onEdit={() => setQuoteDialog(true)} />
-            <section className="panel price-instructions"><div className="instruction-icon"><CalendarDays size={19} /></div><div><h2>อัปเดตราคาอย่างไร</h2><p>เปิดหน้าเว็บสมาคมค้าทองคำ ตรวจราคาล่าสุดและเวลาประกาศ จากนั้นกลับมากรอกราคาทองแท่งรับซื้อ/ขายออก และราคาทองรูปพรรณฐานภาษี/ขายออก แอปจะเก็บราคากับเวลาไว้ในอุปกรณ์นี้ และใช้ราคาที่บันทึกเพื่อประเมินพอร์ต</p><a href={sourceUrl} target="_blank" rel="noreferrer">ไปที่ goldtraders.or.th <ExternalLink size={14} /></a></div></section>
-            <div className="notice notice-warn"><AlertTriangle size={17} /><p><strong>ไม่มีการดึงราคาสดอัตโนมัติ</strong><br />แอปนี้ไม่เปิด server ตามที่คุณเลือก และเว็บไซต์สมาคมฯ ไม่อนุญาต browser อ่านข้อมูลข้ามโดเมนโดยตรง กรุณาอัปเดตตัวเลขเองก่อนดูมูลค่าพอร์ต</p></div>
+            <div className="page-heading"><div><span className="eyebrow">GOLD TRADERS ASSOCIATION</span><h1>ราคาอ้างอิง</h1><p>ดึงประกาศล่าสุดและคำนวณมูลค่าพอร์ตใหม่โดยอัตโนมัติ</p></div><button className="button button-primary" onClick={() => setQuoteDialog(true)}><Pencil size={16} />กรอกราคาสำรอง</button></div>
+            <QuotePanel quote={quote} onEdit={() => setQuoteDialog(true)} onRefresh={() => void refreshPricesRef.current()} status={priceStatus} lastCheckedAt={lastCheckedAt} refreshing={refreshing} />
+            <section className="panel price-instructions"><div className="instruction-icon"><CalendarDays size={19} /></div><div><h2>ราคาอัปเดตอัตโนมัติ</h2><p>ระบบตรวจ endpoint ของสมาคมฯ เมื่อเปิดแอปและทุก 2 นาทีขณะหน้าเว็บเปิดอยู่; กำไร/ขาดทุนและมูลค่าพอร์ตจะคำนวณใหม่ทันทีหลังได้รับราคา แสดงเวลาประกาศจริงแยกจากเวลาที่ดึงข้อมูล และไม่มีการอ้างว่าราคาเป็น tick-by-tick</p><a href={sourceUrl} target="_blank" rel="noreferrer">ไปที่ goldtraders.or.th <ExternalLink size={14} /></a></div></section>
+            <div className="notice notice-warn"><AlertTriangle size={17} /><p><strong>ราคาประเมินเป็นราคาอ้างอิง ไม่ใช่ราคาขายจริงรับประกัน</strong><br />เมื่อดึงข้อมูลไม่ได้ แอปใช้ราคาล่าสุดที่บันทึกไว้ในอุปกรณ์และแสดงสถานะการเชื่อมต่อ คุณกรอกราคาสำรองเองได้ โดยระบบจะกลับไปใช้ราคาสมาคมฯ เมื่อเชื่อมต่อสำเร็จครั้งถัดไป</p></div>
           </>}
 
           {tab === 'backup' && <>
             <div className="page-heading"><div><span className="eyebrow">LOCAL DATA CONTROL</span><h1>ข้อมูลและความเป็นส่วนตัว</h1><p>ข้อมูลสินทรัพย์ทองถูกจัดเก็บใน browser ของอุปกรณ์นี้</p></div></div>
-            <section className="panel privacy-panel"><div className="privacy-large"><ShieldCheck size={22} /></div><div><h2>เก็บไว้ในอุปกรณ์นี้เท่านั้น</h2><p>ไม่มีบัญชีผู้ใช้ ไม่มี cloud sync และแอปไม่ส่งรายการทองหรือราคาซื้อขึ้น server หากล้างข้อมูล browser หรือเปลี่ยนอุปกรณ์ รายการอาจหายได้ โปรดดาวน์โหลดไฟล์สำรองเป็นระยะ</p></div></section>
+            <section className="panel privacy-panel"><div className="privacy-large"><ShieldCheck size={22} /></div><div><h2>ข้อมูลพอร์ตเก็บไว้ในอุปกรณ์นี้</h2><p>ไม่มีบัญชีผู้ใช้และไม่มี cloud sync รายการทอง ต้นทุน รูปทอง และใบรับประกันไม่ออกจากอุปกรณ์นี้; server ใช้เฉพาะดึงราคาสาธารณะจากสมาคมฯ และไม่รับข้อมูลพอร์ต หากล้างข้อมูล browser หรือเปลี่ยนอุปกรณ์ รายการอาจหายได้ โปรดดาวน์โหลดไฟล์สำรองเป็นระยะ</p></div></section>
             <div className="backup-grid"><section className="panel backup-card"><span className="backup-icon"><Download size={20} /></span><h2>ส่งออกไฟล์สำรอง</h2><p>ดาวน์โหลดรายการทองและราคาอ้างอิงเป็นไฟล์ JSON เพื่อเก็บไว้นอก browser</p><button className="button button-primary" onClick={exportBackup}><Download size={16} />ดาวน์โหลดข้อมูลสำรอง</button></section><section className="panel backup-card"><span className="backup-icon backup-icon-muted"><FileUp size={20} /></span><h2>นำเข้าหรือกู้คืน</h2><p>เลือกไฟล์สำรองจากทองพอร์ต ข้อมูลปัจจุบันจะถูกแทนที่หลังยืนยัน</p><input ref={importRef} className="sr-only" type="file" accept="application/json,.json" onChange={(e) => void importBackup(e.target.files?.[0])} /><button className="button button-ghost" onClick={() => importRef.current?.click()}><FileUp size={16} />เลือกไฟล์ JSON</button></section></div>
             <div className="notice notice-warm"><AlertTriangle size={17} /><p><strong>สำรองข้อมูลอย่างปลอดภัย</strong><br />ไฟล์ JSON มีข้อมูลพอร์ตและราคาซื้อของคุณ เก็บไว้ในที่ปลอดภัยและอย่าส่งต่อให้ผู้อื่นโดยไม่จำเป็น</p></div>
           </>}
         </>}
-        <footer className="app-footer"><span>ทองพอร์ต <i /> พอร์ตทองส่วนตัว</span><span>ราคาอ้างอิงจากสมาคมฯ · บันทึกด้วยตนเอง</span></footer>
+        <footer className="app-footer"><span>ทองพอร์ต <i /> พอร์ตทองส่วนตัว</span><span>ราคาอ้างอิงสมาคมฯ · ตรวจอัตโนมัติทุก 2 นาที</span></footer>
       </div>
     </main>
 

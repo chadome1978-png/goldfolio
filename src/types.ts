@@ -29,6 +29,8 @@ export interface ManualQuote {
   ornamentSell: number | null;
   quotedAt: string;
   sourceUrl: string;
+  source?: 'manual' | 'association';
+  fetchedAt?: string;
 }
 
 export interface AppSettings {

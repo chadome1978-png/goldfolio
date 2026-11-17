@@ -27,7 +27,7 @@ export default function QuoteForm({ initial, onClose, onSave }: Props) {
     if (Date.parse(timestamp) > Date.now() + 5 * 60_000) { setError('เวลาอ้างอิงต้องไม่อยู่ในอนาคต'); return; }
     setSaving(true); setError('');
     try {
-      await onSave({ barBuy: values[0], barSell: values[1], ornamentBuy: values[2], ornamentSell: values[3], quotedAt: timestamp, sourceUrl: 'https://www.goldtraders.or.th/' });
+      await onSave({ barBuy: values[0], barSell: values[1], ornamentBuy: values[2], ornamentSell: values[3], quotedAt: timestamp, sourceUrl: 'https://www.goldtraders.or.th/', source: 'manual' });
       onClose();
     } catch {
       setError('บันทึกราคาไม่สำเร็จ กรุณาลองอีกครั้ง'); setSaving(false);
@@ -37,7 +37,7 @@ export default function QuoteForm({ initial, onClose, onSave }: Props) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="modal" role="dialog" aria-modal="true" aria-labelledby="quote-form-title">
       <div className="modal-head"><div><span className="eyebrow">อ้างอิงจากสมาคมค้าทองคำ</span><h2 id="quote-form-title">บันทึกราคาอ้างอิง</h2></div><button className="icon-button" onClick={onClose} aria-label="ปิด"><X size={19} /></button></div>
-      <div className="notice notice-warm"><strong>กรอกราคาด้วยตนเอง</strong><p>แอปไม่ได้ดึงราคาอัตโนมัติ โปรดตรวจราคาจากสมาคมฯ แล้วกรอกข้อมูลและเวลาประกาศ</p><a href="https://www.goldtraders.or.th/" target="_blank" rel="noreferrer">เปิดเว็บสมาคมค้าทองคำ <ExternalLink size={13} /></a></div>
+      <div className="notice notice-warm"><strong>กรอกราคาเป็นข้อมูลสำรอง</strong><p>ใช้เมื่อระบบเชื่อมต่อสมาคมฯ ไม่ได้ชั่วคราว; ราคาและเวลาที่กรอกจะถูกแทนที่เมื่อดึงราคาทางการสำเร็จครั้งถัดไป</p><a href="https://www.goldtraders.or.th/" target="_blank" rel="noreferrer">ตรวจราคาในเว็บสมาคมค้าทองคำ <ExternalLink size={13} /></a></div>
       <form onSubmit={submit} className="form-stack">
         <div className="form-grid">
           <div className="field"><label htmlFor="bar-buy">ทองแท่ง · รับซื้อ (บาท/บาททองคำ)</label><input id="bar-buy" type="number" min="1" step="0.01" value={barBuy} onChange={(event) => setBarBuy(event.target.value)} required /></div>

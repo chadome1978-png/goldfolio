@@ -6,27 +6,32 @@
 
 ## การตัดสินใจเรื่องราคาและ server
 
-ผู้ใช้เลือก **ไม่เปิด managed server**; project config จึงคง `server: false`, `database: false`, `auto_publish: false` แอปเป็น static React SPA ไม่มี backend และไม่มี cloud database ข้อมูลเก็บใน IndexedDB บน browser/อุปกรณ์ที่เปิดแอปเท่านั้น ไม่มีบัญชีและไม่ sync ข้ามอุปกรณ์
+ผู้ใช้เดิมเลือกไม่เปิด server แต่วันที่ 17 พ.ย. 2569 ยืนยันให้เปิด server proxy เพื่อดึงราคาอัตโนมัติ; project config จะใช้ `server: true`, `database: false`, `auto_publish: false` การเปิด server ปิดกลับไม่ได้ แอปยังไม่มีบัญชีและไม่ sync ข้อมูลสินทรัพย์ขึ้น cloud
 
-สมาคมค้าทองคำเผยแพร่ราคาทองแท่ง 96.5% เป็นรับซื้อ/ขายออก และราคาทองรูปพรรณ 96.5% เป็นฐานภาษี/ขายออก endpoint ที่หน้าเว็บเรียกคือ `/api/GoldPrices/Details?readjson=false` แต่ไม่ส่ง `Access-Control-Allow-Origin` จึงอ่านจาก browser ข้าม origin ไม่ได้โดยตรง เมื่อผู้ใช้ไม่เลือกเปิด server จะไม่มี proxy: แอปให้ผู้ใช้ตรวจหน้าเว็บสมาคมฯ แล้วกรอกตัวเลขเอง พร้อมเวลาอ้างอิงและลิงก์ต้นทาง ไม่แสดงว่าราคาเป็น real-time หรือราคาที่แอปตรวจสด
+server มีหน้าที่อ่าน endpoint ของสมาคมค้าทองคำเท่านั้น เพราะ endpoint `/api/GoldPrices/Details?readjson=false` ไม่ส่ง `Access-Control-Allow-Origin` สำหรับ browser ข้าม origin หน้าเว็บใช้ route relative `/api/gold-prices`; proxy เลือก record ล่าสุดตาม `asTime` และส่งราคาทองแท่งรับซื้อ/ขายออก, ฐานภาษีรูปพรรณ/ขายออก, เวลาประกาศ และเวลาที่ดึงข้อมูล ไม่รับหรือจัดเก็บ holding, รูปทอง, ใบรับประกัน หรือข้อมูลผู้ใช้
+
+เมื่อเปิดแอป ให้โหลดราคาล่าสุดทันที และรีเฟรชอัตโนมัติทุก 2 นาทีขณะหน้าเว็บเปิดอยู่ พร้อมปุ่มรีเฟรชเอง Dashboard คำนวณมูลค่าและกำไร/ขาดทุนใหม่เมื่อ quote เปลี่ยน แสดงเวลาประกาศจากสมาคมฯ แยกจากเวลาตรวจ endpoint และคงราคา quote ล่าสุดใน IndexedDB เพื่อใช้แสดงพร้อมสถานะเตือนหากดึงข้อมูลไม่สำเร็จ แบบกรอกราคาด้วยตนเองเก็บไว้เป็น fallback; เมื่อดึงราคาใหม่ได้ ค่าจากสมาคมฯ จะกลับมาเป็นค่าหลัก
 
 `ornamentBuy` เก็บ **ฐานภาษีอ้างอิง** เพื่อใช้ประเมินเท่านั้น ไม่เรียกว่า “ราคารับซื้อคืนที่รับประกัน” ราคาจริงที่ร้านรับซื้ออาจเปลี่ยนตามสภาพทอง น้ำหนัก ความบริสุทธิ์และเงื่อนไขร้าน ราคาเก่ากว่า 24 ชั่วโมงแสดงคำเตือน
 
 ## โครงสร้างหน้าจอ
 
-- **ภาพรวม:** ราคาสมาคมฯ ที่บันทึกด้วยมือ; มูลค่าพอร์ต ต้นทุน กำไร/ขาดทุนโดยประมาณ น้ำหนักรวม สัดส่วน และต้นทุน/มูลค่า/ผลตอบแทนแยกประเภท; รายการล่าสุด
+- **ภาพรวม:** ราคาสมาคมฯ อัตโนมัติพร้อมเวลาอ้างอิงและเวลาตรวจล่าสุด; สถานะเชื่อมต่อเป็น badge ขนาดกะทัดรัดในหัวข้อราคาทอง ไม่แยกเป็นแถบเต็มความกว้าง; มูลค่าพอร์ต ต้นทุน กำไร/ขาดทุนโดยประมาณ น้ำหนักรวม สัดส่วน และต้นทุน/มูลค่า/ผลตอบแทนแยกประเภท; รายการล่าสุด
 - **สินทรัพย์ทอง:** ค้นหา กรองตามประเภท และเรียงตามวันที่ น้ำหนัก ต้นทุน หรือกำไร/ขาดทุน; เพิ่ม แก้ไข ลบ และเปิดรายละเอียด; ฟอร์มซื้อเข้าให้แนบรูปทองหนึ่งรูปและใบรับประกันหนึ่งไฟล์ (ภาพ/PDF) พร้อม thumbnail/ชื่อไฟล์และการเปลี่ยนหรือลบไฟล์แนบ
-- **ราคาอ้างอิง:** แสดงราคาทองแท่งรับซื้อ/ขายออกและทองรูปพรรณฐานภาษี/ขายออก พร้อมวันเวลาไทยและลิงก์สมาคมฯ; กรอก/แก้ไขด้วยตนเอง
+- **ราคาอ้างอิง:** แสดงราคาทองแท่งรับซื้อ/ขายออกและทองรูปพรรณฐานภาษี/ขายออก พร้อมเวลาไทย ลิงก์สมาคมฯ; ยุบสถานะการดึงข้อมูลไว้กับหัวข้อและเวลาตรวจ/ปุ่มรีเฟรชไว้ในแถวข้อมูลราคาเดียวกันทั้ง desktop และ mobile; มีฟอร์มกรอกมือเมื่อจำเป็น
 - **ข้อมูลและความเป็นส่วนตัว:** export และ import JSON backup; แจ้งความเสี่ยงที่ข้อมูล local อาจหายเมื่อ browser ถูกล้างหรือเปลี่ยนอุปกรณ์
 
 ## สแตกและโครงสร้าง
 
-React 19, TypeScript 7, Vite 8, CSS custom properties; build เป็น static output `dist/`. ไม่มี external font หรือ image request ใน UI หลัก และไม่มีการส่งรายการทอง/ต้นทุนไป analytics ของแอป
+React 19, TypeScript 7, Vite 8, CSS custom properties; frontend build เป็น static output `dist/`, Node.js HTTP server ให้ API proxy และ health endpoint ใช้ Node built-ins โดยไม่เพิ่ม dependency runtime
 
-- `src/App.tsx`: navigation, state และ flow หลักของแอป
+- `src/App.tsx`: navigation, state, refresh lifecycle และ flow หลักของแอป
 - `src/components/`: ฟอร์มรายการ/ราคา, รายละเอียดสินทรัพย์, summary แยกประเภท และ UI cards
 - `src/features/holdings/`: โมเดล, ต้นทุน, มูลค่า และผลต่าง
-- `src/features/prices/`: manual quote, validation, freshness และเวลาไทย
+- `src/features/prices/`: quote normalization, manual fallback, validation, freshness, fetch status และเวลาไทย
+- `server/price-source.mjs`: fetch/validate upstream endpoint,เลือก record ล่าสุด, cache สั้นในหน่วยความจำและแปลง schema
+- `server/server.mjs`: Node API proxy `/api/gold-prices`, health endpoint และ fallback เสิร์ฟ static assets
+- `Dockerfile`: hybrid container runtime สำหรับ API; `dist/` ยังคงเป็น static build output
 - `src/lib/storage/`: IndexedDB (`thong-port`), holdings ที่เก็บไฟล์แนบแบบ data URL ใน record เดียวกัน และ settings/quote; JSON backup/restore คงไฟล์แนบโดยไม่ต้องเปลี่ยน schema/version และรองรับไฟล์ backup เก่าที่ไม่มี attachment
 - `src/styles.css`: Dark Mode, ruby/gold tokens, responsive, visible focus และ reduced-motion
 - `public/manus-routes.json`: route manifest ของ SPA (`/`)
@@ -37,6 +42,8 @@ React 19, TypeScript 7, Vite 8, CSS custom properties; build เป็น static
 ต้นทุนรวมต่อรายการ = จำนวน × น้ำหนักต่อชิ้น (หน่วยบาททองคำ) × ราคาซื้อต่อบาททองคำ + ค่ากำเหน็จ/ต้นทุนเพิ่มเติมรวม มูลค่าประเมิน = จำนวน × น้ำหนักต่อชิ้น × ราคารับซื้ออ้างอิงประเภททอง (ทองแท่งใช้รับซื้อ; รูปพรรณใช้ฐานภาษีที่ผู้ใช้กรอก) กำไร/ขาดทุนโดยประมาณ = มูลค่าประเมิน − ต้นทุนรวม; อัตราร้อยละเทียบต้นทุนรวม
 
 ทุกค่ามูลค่าเป็นการประมาณ ไม่ใช่ราคาขายจริงที่รับประกัน ชนิดทองที่รองรับใน MVP คือทอง 96.5%; น้ำหนักกรอกเป็นบาททองคำ
+
+การคำนวณใช้ราคารับซื้อทองแท่งและฐานภาษีทองรูปพรรณจาก record ล่าสุดที่สมาคมประกาศ; `asTime` ถือเป็นเวลาไทย (+07:00) ส่วน `fetchedAt` เป็นเวลาที่ proxy ได้ข้อมูลล่าสุด ทั้งสองเวลาแสดงคนละความหมาย
 
 ## Design system ที่ผู้ใช้อนุมัติ
 
@@ -64,6 +71,6 @@ React 19, TypeScript 7, Vite 8, CSS custom properties; build เป็น static
 
 ## Privacy, optimization และ rollout
 
-`index.html` ใช้ `noindex, nofollow, noarchive`; records คงอยู่ใน browser และควรสำรองเป็น JSON ผู้ใช้ต้องทดสอบ/เก็บ backup ข้ามอุปกรณ์เอง MVP ผ่าน TypeScript/Vite production build และตรวจ Preview ทั้งมือถือ/desktop แล้ว แต่ full WCAG 2.2 AA audit, Core Web Vitals บน production, browser/device matrix และ static deployment ยังรอ
+`index.html` ใช้ `noindex, nofollow, noarchive`; records และรูป/ใบรับประกันคงอยู่ใน browser และควรสำรองเป็น JSON server ไม่เปิด database และไม่รับข้อมูล records; รับเฉพาะคำขอราคาอ้างอิงแบบไม่มีข้อมูลส่วนบุคคล Build/deploy declarations รองรับ static frontend + API container; `auto_publish` ปิดและยังไม่ publish
 
-ดูรายละเอียดกำหนดการและรายการก่อนเผยแพร่ที่ `BUILD-PLAN.md` ขณะนี้ยังไม่ publish; หากต้องการราคาสดอัตโนมัติในอนาคตต้องทบทวนข้อจำกัด CORS และขออนุมัติ server แยกก่อน
+ดูรายละเอียดกำหนดการและรายการก่อนเผยแพร่ที่ `BUILD-PLAN.md` ขณะนี้ยังไม่ publish; ราคาอัตโนมัติอัปเดตตามรอบที่สมาคมเผยแพร่ ไม่ใช่ราคาซื้อขายแบบ tick-by-tick
