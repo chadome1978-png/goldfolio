@@ -43,7 +43,9 @@ Server proxy อ่าน official endpoint `/api/GoldPrices/Details?readjson=fa
 
 ## Design system ที่ผู้ใช้เลือก
 
-โครงหลักเดิมเป็น Dark Mode แดงทับทิม–ทอง; สำหรับคำขอล่าสุด ทดลองเปลี่ยน Overview เท่านั้นเป็น **พื้น/การ์ดสีทอง + accent สีน้ำเงินเข้ม**: พื้น `#D6AE3B`, surfaces `#F8EBC1`/`#EFE0A7`, navy `#103B70` และ blue `#174A7E`, ข้อความหลัก `#2B220F`, รอง `#4A3717`; ปุ่มน้ำเงินใช้ข้อความขาว ตรวจ contrast ก่อนจับภาพ และเก็บสีแดงไว้เฉพาะความหมายเชิงสถานะผิดพลาด/ขาดทุน แท็บอื่นคง theme เดิมจนกว่าจะขอขยาย UI ต้อง mobile-first มี contrast/focus/keyboard accessibility
+โครงหลักเดิมเป็น Dark Mode แดงทับทิม–ทอง; ตามภาพอ้างอิงล่าสุด ทดลองเปลี่ยน Overview เท่านั้นเป็น **Graphite Bullion Terminal**: พื้น `#17181B`, surfaces `#202126`/`#282A30`, เส้นขอบ graphite `#42434A`, ทองเมทัลลิก `#E4BC51`/`#FFD36A`, ตัวอักษรหลัก `#F5F4EF` และรอง `#D0D0D0`/`#AEB0B4`; ปุ่มหลักสีทองใช้ตัวอักษรเข้ม ส่วน error/loss คงสีแดงและ gain คงสีเขียวเพื่อไม่ให้สีความหมายเปลี่ยน ใช้ radial/linear CSS gradients สร้างแสงทองและเส้นกราฟบนการ์ดราคาโดยไม่คัดลอกโฆษณา/โลโก้ในภาพ แท็บอื่นคง theme เดิมจนกว่าจะขอขยาย UI ต้อง mobile-first มี contrast/focus/keyboard accessibility
+
+**แนวทางหน้าจอ:** ใช้บุคลิก premium bullion terminal ที่สงบและแม่นยำ—sidebar charcoal คงที่บน desktop, header สั้น, การ์ดราคาสมาคมฯ เป็น hero ลำดับแรก, ตามด้วย KPI และสัดส่วน/รายการล่าสุด; บนมือถือคง bottom navigation และเรียงราคา → KPI → รายการให้เห็นง่าย Signature elements คือ sheen สีทองเฉียงบนการ์ดราคา, เส้นขอบทองบาง และไอคอนเหรียญ/ทองแท่งเดิม Interaction ใช้ hover/focus ชัดเจนและไม่กระพริบ; ปิด motion ที่ไม่จำเป็นและเคารพ reduced-motion ใช้ system Thai sans เดิม, หัวข้อขาวนวล, body/caption เทาอ่อน, สีทองสงวนไว้สำหรับราคา/CTA/สัญญาณสำคัญ
 
 ## สแตกและโครงสร้างเป้าหมาย
 

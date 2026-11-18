@@ -29,10 +29,16 @@
 - [ ] เก็บ service secret ผ่าน protected WebDev secret input; ห้ามแสดง/บันทึกค่า secret และห้าม push เข้าสู่ public GitHub
 - [ ] Build, runtime smoke, Preview QA และยืนยัน config `database:false`, `auto_publish:false`; ไม่ publish จนผู้ใช้สั่ง
 
-## ธีมทดลองล่าสุด — ทอง + น้ำเงิน (เฉพาะ Overview)
+## ธีมที่ตรวจรอบก่อน — ทอง + น้ำเงิน (เฉพาะ Overview)
 - [x] คงพื้น/การ์ดทองของหน้า Overview แต่เปลี่ยน accent จากแดงเป็นน้ำเงินเข้ม; ใช้น้ำเงินกับ active/brand/button accents และตัวอักษรขาวบนปุ่มน้ำเงิน
 - [x] ตรวจ contrast ของน้ำเงินบนพื้นทอง/ครีมให้ผ่านระดับอ่านสบาย; คงแดงเฉพาะความหมายสถานะผิดพลาด/ขาดทุน ไม่เปลี่ยนสีของแท็บอื่น
 - [x] ตรวจ Preview desktop และ mobile ว่า hierarchy, CTA, price status, navigation และ card accents ยังอ่านชัดและไม่ล้น viewport
+
+## ธีมทดลองล่าสุด — Graphite + Metallic Gold (เฉพาะ Overview)
+- [x] เปลี่ยนพื้นหน้า Overview, sidebar, topbar และ navigation เป็น charcoal/graphite ตามภาพอ้างอิง; เปลี่ยนพื้นผิวการ์ดราคา, KPI และแผงสัดส่วนสินทรัพย์เป็น graphite เข้ม
+- [x] ใช้ทองเมทัลลิกเป็นสีเน้น/CTA/ไอคอน พร้อมประกาย radial/เส้นเฉียงบนการ์ดราคา; ไม่ใช้โลโก้หรือโฆษณาในภาพอ้างอิง; คงแดงสำหรับ error/loss และเขียวสำหรับ gain
+- [x] ใช้ตัวอักษรขาวนวลและเทาอ่อนบนพื้นเข้ม ตรวจ contrast; ปรับ focus ring และ hover ให้เห็นชัด
+- [x] ตรวจ Preview Desktop และ Mobile ว่าราคา สถานะเชื่อมต่อ ปุ่ม และ bottom navigation อ่านชัดและไม่ล้น; แท็บอื่นยังคงธีมเดิมจนกว่าจะยืนยันขยาย
 
 ## Design และ QA ก่อนเผยแพร่
 - [x] Add Gold Transaction พร้อมรูปทอง/ใบรับประกันในธีมทอง–แดง, responsive และ preview
