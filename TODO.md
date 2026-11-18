@@ -1,43 +1,44 @@
 # TODO — ทองพอร์ต
 
-## ฟีเจอร์ MVP (พัฒนาและทดสอบแล้ว)
+## MVP ที่พัฒนาและทดสอบแล้ว
 - [x] Dashboard แสดงจำนวน น้ำหนัก ต้นทุนรวม มูลค่า และกำไร/ขาดทุนโดยประมาณของพอร์ต
 - [x] สรุปสัดส่วนและผลลัพธ์แยกทองแท่ง/ทองรูปพรรณ
-- [x] คำนวณต้นทุน มูลค่าอ้างอิง และผลต่างโดยใช้ราคารับซื้อทองแท่ง/ฐานภาษีรูปพรรณ พร้อม disclaimer ว่าเป็นค่าประมาณ
-- [x] เพิ่ม แก้ไข ลบ และเปิดรายละเอียดรายการทอง: จำนวน น้ำหนัก ราคาซื้อ วันที่ซื้อ และต้นทุนเพิ่มเติม
-- [x] รายการทองค้นหา/กรอง/เรียงตามประเภท วันที่ น้ำหนัก ต้นทุน หรือผลกำไรขาดทุน
-- [x] แสดงราคาอ้างอิงสมาคมฯ ทั้งรับซื้อ/ขายออกสำหรับทองแท่ง และฐานภาษี/ขายออกสำหรับทองรูปพรรณ พร้อมเวลาไทยและลิงก์ทางการ
-- [x] ใช้ server proxy `/api/gold-prices` สำหรับ fetch ราคา official endpoint; ไม่เรียกข้าม origin จาก browser โดยตรง; server ไม่รับข้อมูลพอร์ตหรือ attachments
-- [x] โหลดราคาเมื่อเปิดแอปและรีเฟรชอัตโนมัติทุก 2 นาทีขณะเปิดอยู่; มีปุ่ม refresh; คำนวณ Dashboard ใหม่ทันทีเมื่อราคาเปลี่ยน
-- [x] แสดงเวลา `asTime` ของประกาศสมาคมฯ และเวลา `fetchedAt` ที่แยกความหมายกัน; แสดงสถานะการเชื่อมต่อ/ข้อผิดพลาดและยังใช้ราคาในเครื่องล่าสุดได้เมื่อดึงไม่สำเร็จ
-- [x] คงฟอร์มกรอกราคาเองเป็น fallback; เมื่อ fetch ราคาทางการสำเร็จ ให้ราคา official เป็นค่าหลัก; เตือนราคาเก่ากว่า 24 ชั่วโมง
-- [x] เปิด server แบบ one-way เฉพาะ price proxy โดยคง `database:false` และ `auto_publish:false`; กำหนด static build + server deploy + route split สำหรับการเผยแพร่ในอนาคต แต่ยังไม่ publish
-- [x] Responsive mobile/desktop; แท็บเดิมยังเป็น Dark Mode แดงทับทิม–ทอง; holdings/attachments เก็บ IndexedDB local-only
-- [x] สำรอง/กู้คืน JSON; ทดสอบ export และ restore ด้วยข้อมูล QA ชั่วคราว
-- [x] `pnpm build` ผ่าน; app root และ route manifest ตอบ HTTP 200; ตรวจ screenshot ที่ viewport 390px/1440px
-- [x] ลบข้อมูล/ราคา test ออกจาก browser sandbox หลังการทดสอบ
+- [x] เพิ่ม แก้ไข ลบ และเปิดรายละเอียดรายการทอง
+- [x] ฟอร์มซื้อเข้าแนบรูปทองและใบรับประกัน (ภาพ/PDF) พร้อม preview/เปลี่ยน/ลบ; image compression และ validation
+- [x] แสดงไฟล์แนบในรายละเอียด; IndexedDB local cache และ JSON export/import (รวม attachments, รองรับ backup รุ่นเดิม)
+- [x] ราคาสมาคมฯ ผ่าน Node proxy; initial fetch + refresh ทุก 2 นาทีขณะเปิดหน้า, ปุ่ม refresh, status, manual fallback, stale warning >24h
+- [x] Dashboard คำนวณมูลค่าและ P/L ใหม่เมื่อ quote เปลี่ยน; quote cache คงอยู่ในเครื่อง
+- [x] ยุบสถานะการเชื่อมต่อเป็น badge กับราคาทองทั้ง desktop/mobile
+- [x] ธีม Overview ทอง–แดงเป็น preview รอบก่อน; หน้าอื่นคง theme ที่เลือกและ responsive layout
+- [x] Build ผ่าน, endpoint official ผ่าน parser/production smoke, Dashboard price refresh และ recalculation ทดสอบใน Preview; QA data ถูกล้าง
 
-## ราคาอัตโนมัติและกำไร/ขาดทุนแบบเรียลไทม์
-- [x] ใช้ค่ารับซื้อทองแท่งและฐานภาษีทองรูปพรรณจาก record ล่าสุดของสมาคมค้าทองคำ; แปลง `asTime` เป็นเวลาไทยอย่างถูกต้องและตรวจราคา/วันเวลาให้ครบก่อนแสดง
-- [x] คำนวณมูลค่าและกำไร/ขาดทุนใหม่ทันทีเมื่อได้รับ quote ใหม่ โดยไม่ส่ง holdings, ต้นทุน, รูปทองหรือใบรับประกันไป server
-- [x] คงข้อมูลราคา quote ล่าสุดในอุปกรณ์เพื่อ fallback แบบอ่านอย่างเดียวเมื่อ network/API ใช้งานไม่ได้; ระบุอย่างชัดเจนว่าเป็นราคาล่าสุดที่ประกาศ/เวลาที่ดึง ไม่กล่าวอ้างว่าเป็น tick-by-tick
-- [x] ยุบสถานะการเชื่อมต่อให้เป็นองค์ประกอบกะทัดรัดอยู่กับส่วนแสดงราคาทอง แทนแถวสถานะแยก; คงข้อความสถานะ เวลาอัปเดต และปุ่มรีเฟรชให้เห็นและใช้งานได้ทั้ง desktop และ mobile
+## Cloud Sync ใน BNK — อนุมัติขอบเขตแล้ว กำลังพัฒนา
+- [ ] สร้าง additive migration เฉพาะ `public.goldfolio_*`; ห้ามอ่าน/แก้/ลบตารางหรือ records เดิมของ RoomRent
+- [ ] เปิด RLS สำหรับตารางใหม่และถอน grants ของ `public`, `anon`, `authenticated`; ให้ server เท่านั้นเข้าฐานข้อมูลด้วย secret key
+- [ ] สร้าง private bucket `goldfolio-attachments` พร้อม MIME allowlist (JPEG/PNG/WebP/PDF) และจำกัดไฟล์ไม่เกิน 5 MiB
+- [ ] ใช้ Manus OAuth ตาม WebDev contract: ตรวจ `state`/nonce แบบ one-time, ตรวจ app session JWT, cookie `webdev_app_session`, derive `owner_id` จาก `openId` ที่ยืนยันแล้ว
+- [ ] ป้องกัน API ด้วย auth; ทุก query บังคับ owner scope; ไม่รับ `owner_id` จาก client; secret key อยู่ฝั่ง server เท่านั้นและไม่เข้า GitHub/browser/log/response
+- [ ] เพิ่มหน้า/สถานะบัญชีและ Cloud Sync: logged-in/out, sync off/on, เวลา sync ล่าสุด, pending/error/retry
+- [ ] คง IndexedDB/JSON backup เป็น local/offline fallback; หาก upload/download ล้มเหลวต้องไม่ทำข้อมูล local หาย
+- [ ] การ sign-in ครั้งแรกต้องยังไม่ upload local data อัตโนมัติ; แสดงจำนวน records/files และขอ user ยืนยันก่อน merge
+- [ ] เมื่อยืนยันแล้ว ให้ merge holdings และรูปทอง/ใบรับประกันทั้งหมดกับ BNK; new CRUD/attachments sync เมื่อออนไลน์และผู้ใช้เปิด sync
+- [ ] ใช้ `updatedAt` reconciliation, pending queue และ remote deletion tombstones เพื่อรองรับ offline/retry และหลายอุปกรณ์โดยไม่คืนรายการที่ลบแล้วโดยเงียบ ๆ
+- [ ] Quote official เป็นข้อมูลสาธารณะและไม่จำเป็นต้อง sync; manual fallback ส่วนตัวเก็บ/sync ผ่าน preferences เมื่อผู้ใช้เปิด Cloud Sync เท่านั้น
+- [ ] สร้าง/อัปเดต bucket โดยไม่เปิด public; upload/download/delete attachment ผ่าน authenticated server, ตรวจสิทธิ์เจ้าของทุกครั้ง
+- [ ] ทดสอบ RLS/default deny, owner isolation ระหว่างผู้ใช้, OAuth callback/state, first-sync cancel/confirm, conflicts, tombstone delete, offline queue, private files และ legacy backups
+- [ ] เก็บ service secret ผ่าน protected WebDev secret input; ห้ามแสดง/บันทึกค่า secret และห้าม push เข้าสู่ public GitHub
+- [ ] Build, runtime smoke, Preview QA และยืนยัน config `database:false`, `auto_publish:false`; ไม่ publish จนผู้ใช้สั่ง
 
-## ธีมตามคำขอล่าสุด — preview เฉพาะหน้า Overview
-- [x] เปลี่ยนพื้นที่สีน้ำเงินของ preview เป็นพื้น/การ์ดสีทอง และเปลี่ยนสีทองเน้นเป็นสีแดง; ใช้ตัวอักษรเข้มบนพื้นทองและขาวนวลบนปุ่มแดงเพื่อให้อ่านง่าย; เปลี่ยนเฉพาะหน้า Overview รวม shell/navigation ส่วนแท็บอื่นคงธีมเดิม
+## ธีมทดลองล่าสุด — ทอง + น้ำเงิน (เฉพาะ Overview)
+- [x] คงพื้น/การ์ดทองของหน้า Overview แต่เปลี่ยน accent จากแดงเป็นน้ำเงินเข้ม; ใช้น้ำเงินกับ active/brand/button accents และตัวอักษรขาวบนปุ่มน้ำเงิน
+- [x] ตรวจ contrast ของน้ำเงินบนพื้นทอง/ครีมให้ผ่านระดับอ่านสบาย; คงแดงเฉพาะความหมายสถานะผิดพลาด/ขาดทุน ไม่เปลี่ยนสีของแท็บอื่น
+- [x] ตรวจ Preview desktop และ mobile ว่า hierarchy, CTA, price status, navigation และ card accents ยังอ่านชัดและไม่ล้น viewport
 
-## ธุรกรรมซื้อเข้าและไฟล์แนบ
-- [x] ออกแบบฟอร์ม Add Gold Transaction สำหรับเพิ่มและแก้ไขรายการซื้อทอง โดยยังเก็บข้อมูลประเภททอง จำนวน น้ำหนัก ราคาซื้อ ต้นทุนเพิ่มเติม วันที่ซื้อ และบันทึกเดิมครบ
-- [x] เพิ่มช่องแนบรูปทองหนึ่งภาพและใบรับประกันหนึ่งไฟล์; รองรับภาพสำหรับทั้งสองช่อง และรองรับ PDF สำหรับใบรับประกัน; แสดงตัวอย่าง/ชื่อไฟล์ และให้เปลี่ยนหรือลบไฟล์ก่อนบันทึก
-- [x] ปรับขนาดรูปก่อนจัดเก็บและจำกัดขนาดไฟล์; แจ้งข้อผิดพลาดให้เข้าใจได้เมื่อไฟล์ผิดชนิด/เกินขนาด; แสดงรูปและลิงก์เอกสารจากหน้ารายละเอียดสินทรัพย์
-- [x] จัดเก็บรูปและเอกสารไว้เฉพาะใน IndexedDB บนอุปกรณ์ ไม่เปิด server ไม่อัปโหลดไฟล์; export/import JSON รวมไฟล์แนบ และรองรับ backup รุ่นเดิมที่ไม่มีข้อมูลไฟล์แนบ
-- [x] จัดรูปแบบฟอร์มด้วยธีมทอง–แดงและ typography อ่านสบาย พร้อม responsive CSS สำหรับ desktop และ mobile
-- [x] ทดสอบใน Preview ด้วยไฟล์ภาพและ PDF จำลอง: เลือก/เปลี่ยนไฟล์ บันทึก และเปิดรายละเอียด; ล้างข้อมูล QA หลังทดสอบ
-
-## QA ก่อนเผยแพร่
+## Design และ QA ก่อนเผยแพร่
+- [x] Add Gold Transaction พร้อมรูปทอง/ใบรับประกันในธีมทอง–แดง, responsive และ preview
+- [x] ยืนยัน Preview Desktop/Mobile สำหรับการ์ดราคาและการวางสถานะการเชื่อมต่อแบบ compact
 - [ ] ทำ manual WCAG 2.2 AA audit ครบ รวม keyboard/focus order, screen reader, contrast, touch target และ zoom 200%
 - [ ] ทดสอบ Safari/iOS, Chrome/Android และอุปกรณ์ desktop จริง
-- [ ] ทดลองกรอกราคาจริงและเวลาอัปเดตที่ผู้ใช้ตรวจเองจากสมาคมฯ
 - [ ] ทดสอบ warning ราคาเกิน 24 ชั่วโมงและไฟล์ import ผิดรูปแบบ
 - [ ] วัด Core Web Vitals หลัง deploy จริง
-- [ ] เลือก static hosting และเผยแพร่หลังผู้ใช้อนุมัติ; ตอนนี้ยังไม่ publish
+- [ ] เผยแพร่เมื่อผู้ใช้อนุมัติเท่านั้น; ตอนนี้ยังไม่ publish

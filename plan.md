@@ -2,75 +2,70 @@
 
 ## ขอบเขตผลิตภัณฑ์
 
-แอปส่วนตัวสำหรับติดตามทองคำแท่งและทองรูปพรรณ 96.5% ใช้บนมือถือเป็นหลักและ desktop ได้ ครอบคลุมจำนวน น้ำหนักต่อชิ้น ราคาซื้อ วันที่ซื้อ ต้นทุนเพิ่มเติม มูลค่าประเมิน และกำไร/ขาดทุนโดยประมาณ หน้า Dashboard สรุปมูลค่า ต้นทุน น้ำหนัก และผลแยกตามประเภท
+แอปส่วนตัวสำหรับติดตามทองคำแท่งและทองรูปพรรณ 96.5% บนมือถือและ desktop ครอบคลุมจำนวน น้ำหนัก ราคาซื้อ วันที่ซื้อ ต้นทุนเพิ่มเติม มูลค่าประเมิน และกำไร/ขาดทุนโดยประมาณ Dashboard ใช้ราคาสมาคมค้าทองคำที่ proxy ผ่าน server
 
-## การตัดสินใจเรื่องราคาและ server
+ผู้ใช้ยืนยันให้เก็บข้อมูลทองใน Supabase project **BNK** (`etsguakphlytlvzotmor`) และยืนยันให้รวมรูปทอง/ใบรับประกันด้วย ให้สร้างตารางและ bucket ชื่อเฉพาะ `goldfolio_*`; ห้ามอ่าน แก้ไข ลบ หรือย้ายข้อมูล/ตาราง/ไฟล์ของแอป RoomRent ที่อยู่ใน BNK อยู่แล้ว
 
-ผู้ใช้เดิมเลือกไม่เปิด server แต่วันที่ 17 พ.ย. 2569 ยืนยันให้เปิด server proxy เพื่อดึงราคาอัตโนมัติ; project config จะใช้ `server: true`, `database: false`, `auto_publish: false` การเปิด server ปิดกลับไม่ได้ แอปยังไม่มีบัญชีและไม่ sync ข้อมูลสินทรัพย์ขึ้น cloud
+## สถาปัตยกรรมที่อนุมัติ
 
-server มีหน้าที่อ่าน endpoint ของสมาคมค้าทองคำเท่านั้น เพราะ endpoint `/api/GoldPrices/Details?readjson=false` ไม่ส่ง `Access-Control-Allow-Origin` สำหรับ browser ข้าม origin หน้าเว็บใช้ route relative `/api/gold-prices`; proxy เลือก record ล่าสุดตาม `asTime` และส่งราคาทองแท่งรับซื้อ/ขายออก, ฐานภาษีรูปพรรณ/ขายออก, เวลาประกาศ และเวลาที่ดึงข้อมูล ไม่รับหรือจัดเก็บ holding, รูปทอง, ใบรับประกัน หรือข้อมูลผู้ใช้
+- ใช้ Manus OAuth เป็นตัวระบุตัวผู้ใช้ แอปไม่สร้างระบบรหัสผ่านหรือ Supabase Auth เอง
+- คง WebDev `server:true`, `database:false` (ไม่ใช้ฐานข้อมูลที่ WebDev จัดให้) และ `auto_publish:false`; ข้อมูลเก็บใน BNK ผ่าน Node server ของแอปเท่านั้น
+- Browser ไม่เชื่อม Supabase โดยตรง และไม่มี service/secret key ใน bundle หรือ Git; ใช้ key ที่บันทึกผ่าน protected environment secret ของ WebDev เฉพาะ server เท่านั้น
+- รายการทองและไฟล์แนบยังคง cache ใน IndexedDB และ export/import JSON ได้ เพื่อใช้งาน offline และเป็นข้อมูลสำรอง
+- หลังผู้ใช้ยืนยันเปิด Cloud Sync ครั้งแรก ข้อมูลรายการทองที่มีอยู่และไฟล์แนบจะ merge ไปยัง BNK; ก่อนกดยืนยัน ห้ามอัปโหลดข้อมูลเดิมโดยอัตโนมัติ แม้ผู้ใช้ลงชื่อเข้าใช้แล้ว
+- หลัง first sync consent สำเร็จ รายการที่เพิ่ม/แก้ไข/ลบใหม่จะ sync อัตโนมัติเมื่อออนไลน์และลงชื่อเข้าใช้; งานที่ยัง sync ไม่สำเร็จต้องคงใน local queue พร้อมสถานะที่เข้าใจได้
+- initial merge และ sync รอบต่อไปใช้ `updatedAt` เพื่อเลือกรายการใหม่กว่า และเก็บ deletion tombstones เพื่อไม่คืนรายการที่ลบบนอีกอุปกรณ์โดยเงียบ ๆ; ห้ามแทนที่ข้อมูลทั้งฝั่ง local หรือ cloud แบบไม่มี consent
+- คำขอราคา `/api/gold-prices` ไม่เปลี่ยนแปลง; quote ทางการเป็นข้อมูลสาธารณะและยัง cache ในอุปกรณ์ ไม่จำเป็นต้องส่งขึ้น BNK; ถ้ามี manual fallback ส่วนตัวให้ sync ผ่าน preferences เฉพาะเมื่อผู้ใช้เปิด Cloud Sync
 
-เมื่อเปิดแอป ให้โหลดราคาล่าสุดทันที และรีเฟรชอัตโนมัติทุก 2 นาทีขณะหน้าเว็บเปิดอยู่ พร้อมปุ่มรีเฟรชเอง Dashboard คำนวณมูลค่าและกำไร/ขาดทุนใหม่เมื่อ quote เปลี่ยน แสดงเวลาประกาศจากสมาคมฯ แยกจากเวลาตรวจ endpoint และคงราคา quote ล่าสุดใน IndexedDB เพื่อใช้แสดงพร้อมสถานะเตือนหากดึงข้อมูลไม่สำเร็จ แบบกรอกราคาด้วยตนเองเก็บไว้เป็น fallback; เมื่อดึงราคาใหม่ได้ ค่าจากสมาคมฯ จะกลับมาเป็นค่าหลัก
+## แบบจำลองข้อมูลและสิทธิ์
 
-`ornamentBuy` เก็บ **ฐานภาษีอ้างอิง** เพื่อใช้ประเมินเท่านั้น ไม่เรียกว่า “ราคารับซื้อคืนที่รับประกัน” ราคาจริงที่ร้านรับซื้ออาจเปลี่ยนตามสภาพทอง น้ำหนัก ความบริสุทธิ์และเงื่อนไขร้าน ราคาเก่ากว่า 24 ชั่วโมงแสดงคำเตือน
+ใช้ตารางแยกเฉพาะแอป เช่น `public.goldfolio_holdings` สำหรับข้อมูลรายการ, owner, object paths, `updated_at` และ tombstone; `public.goldfolio_preferences` สำหรับค่าตั้งส่วนตัวที่จำเป็นต่อการซิงก์ (เช่น manual price fallback ถ้ามี) หลีกเลี่ยงการเก็บ bytes ของภาพใน JSONB
 
-## โครงสร้างหน้าจอ
+เปิด RLS บนตารางใหม่ และถอน grants จาก `public`, `anon`, `authenticated`; server API เข้าฐานข้อมูลด้วย key ฝั่ง server ซึ่ง bypasses RLS ดังนั้นทุก API ต้องตรวจ Manus session ก่อน แล้ว derive `owner_id` จาก `openId` ที่ตรวจสอบแล้วเท่านั้น—ห้ามรับ `owner_id` จาก request body/query และทุก select/upsert/delete ต้องกรอง owner ID เสมอ
 
-- **ภาพรวม:** ราคาสมาคมฯ อัตโนมัติพร้อมเวลาอ้างอิงและเวลาตรวจล่าสุด; สถานะเชื่อมต่อเป็น badge ขนาดกะทัดรัดในหัวข้อราคาทอง ไม่แยกเป็นแถบเต็มความกว้าง; มูลค่าพอร์ต ต้นทุน กำไร/ขาดทุนโดยประมาณ น้ำหนักรวม สัดส่วน และต้นทุน/มูลค่า/ผลตอบแทนแยกประเภท; รายการล่าสุด
-- **สินทรัพย์ทอง:** ค้นหา กรองตามประเภท และเรียงตามวันที่ น้ำหนัก ต้นทุน หรือกำไร/ขาดทุน; เพิ่ม แก้ไข ลบ และเปิดรายละเอียด; ฟอร์มซื้อเข้าให้แนบรูปทองหนึ่งรูปและใบรับประกันหนึ่งไฟล์ (ภาพ/PDF) พร้อม thumbnail/ชื่อไฟล์และการเปลี่ยนหรือลบไฟล์แนบ
-- **ราคาอ้างอิง:** แสดงราคาทองแท่งรับซื้อ/ขายออกและทองรูปพรรณฐานภาษี/ขายออก พร้อมเวลาไทย ลิงก์สมาคมฯ; ยุบสถานะการดึงข้อมูลไว้กับหัวข้อและเวลาตรวจ/ปุ่มรีเฟรชไว้ในแถวข้อมูลราคาเดียวกันทั้ง desktop และ mobile; มีฟอร์มกรอกมือเมื่อจำเป็น
-- **ข้อมูลและความเป็นส่วนตัว:** export และ import JSON backup; แจ้งความเสี่ยงที่ข้อมูล local อาจหายเมื่อ browser ถูกล้างหรือเปลี่ยนอุปกรณ์
+สร้าง bucket `goldfolio-attachments` เป็น **private** สำหรับรูป JPEG/PNG/WebP และใบรับประกันภาพหรือ PDF; จำกัด MIME/ขนาดตามข้อกำหนดแอป ตั้ง object key ที่ไม่เผยชื่อไฟล์/ตัวระบุบัญชี และให้ server ตรวจสิทธิ์ก่อน upload/download/delete ไม่มี public URL หรือ direct client access
 
-## สแตกและโครงสร้าง
+## UX ที่เพิ่มสำหรับ Cloud Sync
 
-React 19, TypeScript 7, Vite 8, CSS custom properties; frontend build เป็น static output `dist/`, Node.js HTTP server ให้ API proxy และ health endpoint ใช้ Node built-ins โดยไม่เพิ่ม dependency runtime
+- เมนู “บัญชีและการซิงก์” แสดงสถานะ signed in/out, cloud sync off/on, เวลาซิงก์ล่าสุด และงานที่ยังรอ
+- logged-out state มีปุ่มลงชื่อเข้าใช้ด้วย Manus OAuth; ไม่สร้าง preview user ปลอมและไม่ข้าม authentication ใน `NODE_ENV`
+- หลัง sign-in ครั้งแรก แสดง preview จำนวนรายการและไฟล์แนบในเครื่อง/บนคลาวด์ แล้วให้ผู้ใช้ยืนยัน “รวมและซิงก์”; ถ้ายกเลิก ข้อมูลอยู่ในเครื่องเหมือนเดิมและยังไม่ส่งออกไป
+- เมื่อ sync เสร็จแสดงสำเร็จ/ผิดพลาด พร้อม retry; การ logout ไม่ลบ IndexedDB หรือ cloud data
+- รายละเอียดสินทรัพย์ยังเปิดภาพ/ใบรับประกันได้จาก local cache; การแก้ไขไฟล์ต้องส่งไฟล์ใหม่ผ่าน server หลังเปิด Cloud Sync
 
-- `src/App.tsx`: navigation, state, refresh lifecycle และ flow หลักของแอป
-- `src/components/`: ฟอร์มรายการ/ราคา, รายละเอียดสินทรัพย์, summary แยกประเภท และ UI cards
-- `src/features/holdings/`: โมเดล, ต้นทุน, มูลค่า และผลต่าง
-- `src/features/prices/`: quote normalization, manual fallback, validation, freshness, fetch status และเวลาไทย
-- `server/price-source.mjs`: fetch/validate upstream endpoint,เลือก record ล่าสุด, cache สั้นในหน่วยความจำและแปลง schema
-- `server/server.mjs`: Node API proxy `/api/gold-prices`, health endpoint และ fallback เสิร์ฟ static assets
-- `Dockerfile`: hybrid container runtime สำหรับ API; `dist/` ยังคงเป็น static build output
-- `src/lib/storage/`: IndexedDB (`thong-port`), holdings ที่เก็บไฟล์แนบแบบ data URL ใน record เดียวกัน และ settings/quote; JSON backup/restore คงไฟล์แนบโดยไม่ต้องเปลี่ยน schema/version และรองรับไฟล์ backup เก่าที่ไม่มี attachment
-- `src/styles.css`: Dark Mode, ruby/gold tokens, responsive, visible focus และ reduced-motion
-- `public/manus-routes.json`: route manifest ของ SPA (`/`)
-- `index.html`: Thai language, viewport, noindex metadata
+## ราคาสมาคมฯ และการคำนวณ (คงเดิม)
 
-## แนวทางคำนวณ
+Server proxy อ่าน official endpoint `/api/GoldPrices/Details?readjson=false` เพราะ endpoint ไม่เปิด CORS สำหรับ browser; เลือก record ล่าสุดตาม `asTime` และส่งราคารับซื้อ/ขายออกทองแท่ง, ฐานภาษี/ขายออกทองรูปพรรณ, เวลาเผยแพร่และเวลาที่ดึงข้อมูล
 
-ต้นทุนรวมต่อรายการ = จำนวน × น้ำหนักต่อชิ้น (หน่วยบาททองคำ) × ราคาซื้อต่อบาททองคำ + ค่ากำเหน็จ/ต้นทุนเพิ่มเติมรวม มูลค่าประเมิน = จำนวน × น้ำหนักต่อชิ้น × ราคารับซื้ออ้างอิงประเภททอง (ทองแท่งใช้รับซื้อ; รูปพรรณใช้ฐานภาษีที่ผู้ใช้กรอก) กำไร/ขาดทุนโดยประมาณ = มูลค่าประเมิน − ต้นทุนรวม; อัตราร้อยละเทียบต้นทุนรวม
+โหลดราคาเมื่อเปิดแอปและทุก 2 นาทีขณะหน้าเปิดอยู่; คง manual fallback และ quote cache ในอุปกรณ์; Dashboard คำนวณผลใหม่ทันทีเมื่อได้รับ quote เปลี่ยน; เตือน quote เก่ากว่า 24 ชั่วโมง; ไม่กล่าวอ้างว่าเป็น tick-by-tick
 
-ทุกค่ามูลค่าเป็นการประมาณ ไม่ใช่ราคาขายจริงที่รับประกัน ชนิดทองที่รองรับใน MVP คือทอง 96.5%; น้ำหนักกรอกเป็นบาททองคำ
+ต้นทุนรวม = จำนวน × น้ำหนักต่อชิ้น × ราคาซื้อ + ต้นทุนเพิ่มเติม มูลค่าประเมิน = จำนวน × น้ำหนักต่อชิ้น × ราคารับซื้อทองแท่ง หรือฐานภาษีรูปพรรณ กำไร/ขาดทุนโดยประมาณ = มูลค่าประเมิน − ต้นทุนรวม ตัวเลขเป็นการประมาณ ไม่ใช่ราคาซื้อคืนที่รับประกัน
 
-การคำนวณใช้ราคารับซื้อทองแท่งและฐานภาษีทองรูปพรรณจาก record ล่าสุดที่สมาคมประกาศ; `asTime` ถือเป็นเวลาไทย (+07:00) ส่วน `fetchedAt` เป็นเวลาที่ proxy ได้ข้อมูลล่าสุด ทั้งสองเวลาแสดงคนละความหมาย
+## Design system ที่ผู้ใช้เลือก
 
-## Design system ที่ผู้ใช้อนุมัติ
+โครงหลักเดิมเป็น Dark Mode แดงทับทิม–ทอง; สำหรับคำขอล่าสุด ทดลองเปลี่ยน Overview เท่านั้นเป็น **พื้น/การ์ดสีทอง + accent สีน้ำเงินเข้ม**: พื้น `#D6AE3B`, surfaces `#F8EBC1`/`#EFE0A7`, navy `#103B70` และ blue `#174A7E`, ข้อความหลัก `#2B220F`, รอง `#4A3717`; ปุ่มน้ำเงินใช้ข้อความขาว ตรวจ contrast ก่อนจับภาพ และเก็บสีแดงไว้เฉพาะความหมายเชิงสถานะผิดพลาด/ขาดทุน แท็บอื่นคง theme เดิมจนกว่าจะขอขยาย UI ต้อง mobile-first มี contrast/focus/keyboard accessibility
 
-**แนวทาง:** Dark Mode, heritage ร่วมสมัย; ตัวเลขและเวลาอ้างอิงเด่น; ถ้อยคำตรงและกำกับความไม่แน่นอน; mobile-first
+## สแตกและโครงสร้างเป้าหมาย
 
-| Token | ค่า |
-|---|---|
-| Background / deep | `#211A1D` / `#151214` |
-| Surface / elevated | `#2C2427` / `#342A2E` |
-| Ruby / accent | `#782A3A` / `#963B4D` |
-| Gold / highlight | `#C9A24D` / `#E8C66D` |
-| Border | `#46393D` |
-| Text / muted | `#F2EAE6` / `#B6A9AA` |
-| Positive / negative | `#57C98A` / `#F08073` |
+React 19, TypeScript 7, Vite 8; Node.js HTTP server ให้ price proxy และ API auth/sync; ใช้ Supabase REST/Storage server-side โดยไม่ส่ง credential ไป frontend และไม่ใช้ WebDev managed database
 
-ใช้ system font stack ที่รองรับภาษาไทย, tabular numerals เท่าที่มี, focus ring สีทอง และสื่อความหมายกำไร/ขาดทุนด้วยข้อความและเครื่องหมาย ไม่พึ่งสีอย่างเดียว
+- `server/server.mjs`: price endpoint, Manus OAuth callback/session, authenticated holdings/preferences/file API, health endpoint และ SPA/static fallback
+- `server/manus-auth.mjs`: OAuth state+nonce, token exchange, verified user identity และ `webdev_app_session` cookie ตาม WebDev contract
+- `server/supabase-client.mjs`: server-only Supabase fetch helper ที่อ่าน BNK secret จาก environment
+- `src/features/sync/`: client sync state, first-sync consent, reconciliation, queue/retry
+- `src/lib/storage/`: IndexedDB holdings, attachments, pending upserts/deletes, quote cache และ migration เดิมแบบไม่ทำข้อมูลหาย
+- `supabase/migrations/`: additive DDL เฉพาะตาราง `goldfolio_*`, RLS/grants แบบ deny สำหรับ browser roles
+- `public/manus-routes.json`: SPA route discovery; WebDev hybrid route config ส่ง `/api/*`/health เข้า Node และ UI เข้าสู่ static SPA
+- `Dockerfile`: hybrid production server/runtime; ไม่มีการ publish ระหว่าง implementation/QA
 
-## ธีมทดลองตามคำขอล่าสุด — เฉพาะหน้า Overview
+## ไฟล์แนบและ backup
 
-ผู้ใช้ขอให้สลับสีจาก preview ก่อนหน้า: **พื้นที่สีน้ำเงินเปลี่ยนเป็นทอง และสีทองเน้นเปลี่ยนเป็นแดง** ใช้พื้นทอง `#D6AE3B`, surfaces `#F8EBC1` / `#EFE0A7`, แดง `#8E1B2B` / `#A52637`, ข้อความหลัก `#2B220F` และข้อความรอง `#4A3717` / `#5A4728`; บนปุ่มแดงใช้ข้อความขาวนวลเพื่อคง contrast ทดลองเฉพาะ Overview รวม shell/navigation ผ่าน class แบบ scoped; แท็บสินทรัพย์ ราคา และสำรองยังคงธีมเดิมจนกว่าผู้ใช้จะขอขยาย
+รูปทองและใบรับประกันยังบีบอัด/ตรวจ MIME และขนาดในฟอร์ม; IndexedDB/JSON backup เดิมยังใช้งานได้ การ Cloud Sync แปลงไฟล์แนบเป็น object ใน private bucket แล้วเก็บ path/metadata กับรายการ ไม่เก็บข้อมูล binary ใน record; restore จาก backup ยังคงทำได้และไม่ trigger cloud upload จนผู้ใช้เปิด sync/ยืนยันตาม flow
 
-## แบบฟอร์มธุรกรรมซื้อเข้าและเอกสารแนบ
+## Privacy, security และ rollout
 
-ฟอร์มเพิ่ม/แก้ไขจะแบ่งส่วนข้อมูลการซื้อและส่วน “รูปทองและใบรับประกัน” ที่มองเห็นชัด ใช้การ์ดแนบแบบ preview สำหรับรูปทองหนึ่งรูป และใบรับประกันหนึ่งไฟล์ (ภาพหรือ PDF); ผู้ใช้เปลี่ยน/ลบไฟล์ได้ รูปภาพแปลงเป็น JPEG ขนาดเหมาะสมก่อนบันทึก และปฏิเสธไฟล์ชนิดไม่รองรับ/ไฟล์เกินขนาด ส่วนรายละเอียดสินทรัพย์แสดงภาพและลิงก์เปิดเอกสาร ไฟล์แนบฝังใน record ของ IndexedDB และ JSON backup/restore เท่านั้น ไม่อัปโหลดหรือส่งไป server; การ์ดฟอร์มใช้สีทองอ่อน-แดงแม้เปิดจากแท็บสินทรัพย์เดิม
+ลิงก์สาธารณะ/เว็บไซต์ไม่ควร index (`noindex`); ผู้ใช้ที่ไม่มี session เห็นเฉพาะข้อมูลในอุปกรณ์ตัวเอง ไม่มี API สำหรับอ่านหรือเปลี่ยน owner อื่น; secret key มีอยู่ใน server environment เท่านั้นและไม่เขียนลงไฟล์, log, public GitHub หรือ response; Storage private; การเปิด Cloud Sync และ migration ข้อมูลเดิมต้องมี consent ชัดเจน
 
-## Privacy, optimization และ rollout
+การสร้าง schema เป็น additive migration ใช้ namespace เฉพาะและตรวจชื่อก่อน; ตั้ง RLS/grants ปฏิเสธ direct client access แล้วทดสอบด้วย role ที่เกี่ยวข้อง; bucket/private access และ ownership ต้องตรวจ end-to-end ก่อนใช้กับข้อมูลจริง; auto-publish ปิดและยังไม่ publish
 
-`index.html` ใช้ `noindex, nofollow, noarchive`; records และรูป/ใบรับประกันคงอยู่ใน browser และควรสำรองเป็น JSON server ไม่เปิด database และไม่รับข้อมูล records; รับเฉพาะคำขอราคาอ้างอิงแบบไม่มีข้อมูลส่วนบุคคล Build/deploy declarations รองรับ static frontend + API container; `auto_publish` ปิดและยังไม่ publish
-
-ดูรายละเอียดกำหนดการและรายการก่อนเผยแพร่ที่ `BUILD-PLAN.md` ขณะนี้ยังไม่ publish; ราคาอัตโนมัติอัปเดตตามรอบที่สมาคมเผยแพร่ ไม่ใช่ราคาซื้อขายแบบ tick-by-tick
+ดูรายละเอียด security ที่ `SUPABASE-SECURITY.md`, แหล่งราคา `PRICE-SOURCE.md`, และแผน/Checklist ที่ `BUILD-PLAN.md`; ราคาอัตโนมัติอัปเดตตามรอบประกาศสมาคมฯ ไม่ใช่ราคา tick-by-tick
