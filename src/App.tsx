@@ -68,31 +68,31 @@ function QuotePanel({ quote, onEdit, onRefresh, status, lastCheckedAt, refreshin
   };
   const displayTime = quote.fetchedAt ?? lastCheckedAt;
   const timeLabel = status === 'error' && quote.fetchedAt ? 'ดึงสำเร็จล่าสุด' : status === 'manual' ? 'ตรวจระบบล่าสุด' : 'ดึงข้อมูลล่าสุด';
-  return <section className={`market-card ${compact ? 'market-card-compact' : ''}`} aria-labelledby="market-title">
+  return <section className={`market-card ${compact ? 'market-card-compact' : ''}`} aria-labelledby={compact ? undefined : 'market-title'} aria-label={compact ? 'ราคาสมาคมค้าทองคำ' : undefined}>
     <div className="market-head">
       <div className="market-heading">
         <div className="market-kicker-line">
           <span className="market-kicker">ราคาอ้างอิง · สมาคมค้าทองคำ</span>
           <span className={`price-status-badge price-sync-${status}`} role="status" aria-live="polite" title={statusDescriptions[status]}><i className="price-status-dot" aria-hidden="true" />{statusLabels[status]}</span>
         </div>
-        <h2 id="market-title">ราคาทองคำ 96.5%</h2>
+        {!compact && <h2 id="market-title">ราคาทองคำ 96.5%</h2>}
       </div>
-      <div className="market-head-actions">
+      {!compact && <div className="market-head-actions">
         <button className="button button-light button-small" onClick={onEdit}><Pencil size={14} /> กรอกราคาสำรอง</button>
         <button type="button" className="price-refresh-button" onClick={onRefresh} disabled={refreshing} aria-label="รีเฟรชราคาสมาคมค้าทองคำ"><RefreshCw size={14} className={refreshing ? 'is-spinning' : ''} /><span className="price-refresh-label">{refreshing ? 'กำลังตรวจ' : 'รีเฟรช'}</span></button>
-      </div>
+      </div>}
     </div>
     {complete ? <>
       <div className="quote-grid">
         <div className="quote-type"><div className="quote-type-title"><span className="quote-glyph">แท่ง</span><strong>ทองคำแท่ง</strong></div><div className="quote-pair"><div><span>รับซื้อ</span><b>{money(quote.barBuy)}</b></div><div><span>ขายออก</span><b>{money(quote.barSell)}</b></div></div></div>
         <div className="quote-type"><div className="quote-type-title"><span className="quote-glyph">รูป</span><strong>ทองรูปพรรณ</strong></div><div className="quote-pair"><div><span>ฐานภาษี</span><b>{money(quote.ornamentBuy)}</b></div><div><span>ขายออก</span><b>{money(quote.ornamentSell)}</b></div></div></div>
       </div>
-      <div className="quote-foot">
+      {!compact && <div className="quote-foot">
         <span className={stale ? 'quote-stale' : ''}>{stale ? <AlertTriangle size={14} /> : <Check size={14} />} {stale ? 'ราคาอ้างอิงเกิน 24 ชั่วโมง · กรุณาตรวจสอบใหม่' : `ประกาศล่าสุด ณ ${formatDateTime(quote.quotedAt)}`}</span>
         {displayTime && <span className="price-sync-time">{timeLabel} {formatDateTime(displayTime)}</span>}
         <a href={sourceUrl} target="_blank" rel="noreferrer">เปิดแหล่งทางการ <ExternalLink size={13} /></a>
-      </div>
-    </> : <div className="quote-empty"><div><strong>{status === 'error' ? 'ยังดึงราคาอ้างอิงไม่ได้' : 'กำลังโหลดราคาอ้างอิง'}</strong><p>{status === 'error' ? 'กดลองรีเฟรชอีกครั้ง หรือกรอกราคาสำรองจากประกาศสมาคมฯ' : 'กำลังตรวจราคาประกาศล่าสุดจากสมาคมค้าทองคำ'}</p><a href={sourceUrl} target="_blank" rel="noreferrer">เปิดเว็บสมาคมค้าทองคำ <ExternalLink size={14} /></a></div><span className="quote-empty-icon"><CircleDollarSign size={28} /></span></div>}
+      </div>}
+    </> : <div className="quote-empty"><div><strong>{status === 'error' ? 'ยังดึงราคาอ้างอิงไม่ได้' : 'กำลังโหลดราคาอ้างอิง'}</strong><p>{compact ? (status === 'error' ? 'ดูสถานะและจัดการราคาได้ที่หน้า ราคาอ้างอิง' : 'กำลังตรวจราคาประกาศล่าสุดจากสมาคมค้าทองคำ') : (status === 'error' ? 'กดลองรีเฟรชอีกครั้ง หรือกรอกราคาสำรองจากประกาศสมาคมฯ' : 'กำลังตรวจราคาประกาศล่าสุดจากสมาคมค้าทองคำ')}</p>{!compact && <a href={sourceUrl} target="_blank" rel="noreferrer">เปิดเว็บสมาคมค้าทองคำ <ExternalLink size={14} /></a>}</div><span className="quote-empty-icon"><CircleDollarSign size={28} /></span></div>}
     {!compact && <div className="manual-hint"><AlertTriangle size={14} /> คำนวณจากราคาประกาศ ไม่ใช่ราคาซื้อขายรับประกัน · ตรวจอัตโนมัติทุก 2 นาทีขณะเปิดแอป</div>}
   </section>;
 }
@@ -266,7 +266,7 @@ export default function App() {
         {busy ? <div className="loading-state"><span className="spinner" />กำลังเปิดพอร์ตทองของคุณ…</div> : <>
           {tab === 'overview' && <>
             <div className="page-heading"><div><span className="eyebrow">PRIVATE PORTFOLIO · {formatDate(new Date().toISOString())}</span><h1>ภาพรวมพอร์ตทอง</h1><p>ติดตามมูลค่า ต้นทุน และผลตอบแทนของทองที่คุณถือครอง</p></div><button className="button button-primary" onClick={() => setHoldingDialog('new')}><Plus size={17} />เพิ่มรายการทอง</button></div>
-            <QuotePanel quote={quote} onEdit={() => setQuoteDialog(true)} onRefresh={() => void refreshPricesRef.current()} status={priceStatus} lastCheckedAt={lastCheckedAt} refreshing={refreshing} />
+            <QuotePanel quote={quote} onEdit={() => setQuoteDialog(true)} onRefresh={() => void refreshPricesRef.current()} status={priceStatus} lastCheckedAt={lastCheckedAt} refreshing={refreshing} compact />
             <div className="stats-grid"><StatCard label="มูลค่าพอร์ตโดยประมาณ" value={quoteIsComplete(quote) ? money(summary.value) : 'รอราคาอ้างอิง'} note={quote.source === 'association' ? `ประเมินจากราคาสมาคมฯ ณ ${formatDateTime(quote.quotedAt)}` : 'ประเมินจากราคาสำรองล่าสุดที่มีในอุปกรณ์'} icon={<CircleDollarSign size={18} />} /><StatCard label="ต้นทุนรวม" value={money(summary.cost)} note={`${holdings.length} รายการในพอร์ต`} icon={<Coins size={18} />} /><StatCard label={totalProfit === null ? 'กำไร/ขาดทุนโดยประมาณ' : totalProfit >= 0 ? 'กำไรโดยประมาณ' : 'ขาดทุนโดยประมาณ'} value={totalProfit === null ? 'รอราคาอ้างอิง' : `${totalProfit >= 0 ? '+' : '−'}${currency.format(Math.abs(totalProfit))}`} note={totalProfit === null || summary.cost === 0 ? 'รอราคาสมาคมฯ เพื่อคำนวณผลต่าง' : `${totalProfit >= 0 ? '+' : ''}${((totalProfit / summary.cost) * 100).toFixed(2)}% จากต้นทุน`} icon={totalProfit !== null && totalProfit < 0 ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />} tone={totalProfit === null ? '' : totalProfit >= 0 ? 'tone-positive' : 'tone-negative'} /><StatCard label="น้ำหนักรวม" value={`${decimal.format(totalWeight(holdings))} บาท`} note={`${summary.barCount} รายการแท่ง · ${summary.ornamentCount} รายการรูปพรรณ`} icon={<Package size={18} />} /></div>
             <div className="overview-grid">
               <section className="panel allocation-panel">
