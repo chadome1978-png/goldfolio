@@ -8,11 +8,12 @@ import HoldingForm from './components/HoldingForm';
 import HoldingDetails from './components/HoldingDetails';
 import CategoryBreakdown from './components/CategoryBreakdown';
 import QuoteForm from './components/QuoteForm';
+import CloudSyncPanel from './features/sync/CloudSyncPanel';
 import { holdingCost, holdingProfit, holdingValue, totalWeight, totals } from './features/holdings/calculations';
 import { fetchOfficialPrice } from './features/prices/api';
 import { quoteIsComplete, quoteIsStale } from './features/prices/quote';
 import { currency, decimal, formatDate, formatDateTime } from './lib/format';
-import { getHoldings, getQuote, removeHolding, replaceAllHoldings, saveHolding, saveQuote } from './lib/storage/db';
+import { getCloudSyncState, getHoldings, getManualQuote, getQuote, removeHolding, replaceAllHoldings, saveCloudSyncState, saveHolding, saveManualQuote, saveQuote } from './lib/storage/db';
 import type { AppTab, Holding, HoldingAttachment, ManualQuote } from './types';
 
 const emptyQuote: ManualQuote = { barBuy: null, barSell: null, ornamentBuy: null, ornamentSell: null, quotedAt: '', sourceUrl: 'https://www.goldtraders.or.th/' };
@@ -210,13 +211,17 @@ export default function App() {
   async function handleSaveQuote(nextQuote: ManualQuote) {
     const manualQuote: ManualQuote = { ...nextQuote, source: 'manual', fetchedAt: undefined };
     await saveQuote(manualQuote);
+    await saveManualQuote(manualQuote);
+    const syncState = await getCloudSyncState();
+    await saveCloudSyncState({ ...syncState, manualQuoteUpdatedAt: new Date().toISOString() });
     setQuote(manualQuote);
     setPriceStatus('manual');
     setMessage('บันทึกราคาสำรองแล้ว · ระบบจะกลับไปใช้ราคาสมาคมฯ เมื่อเชื่อมต่อได้');
   }
 
-  function exportBackup() {
-    const payload = { format: 'thong-port-backup', version: 1, exportedAt: new Date().toISOString(), holdings, quote };
+  async function exportBackup() {
+    const manualQuote = await getManualQuote();
+    const payload = { format: 'thong-port-backup', version: 1, exportedAt: new Date().toISOString(), holdings, quote, manualQuote };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = `thong-port-backup-${new Date().toISOString().slice(0, 10)}.json`; anchor.click(); URL.revokeObjectURL(url);
@@ -237,6 +242,10 @@ export default function App() {
       if (!window.confirm(`นำเข้าข้อมูล ${incoming.length} รายการ? ข้อมูลปัจจุบันจะถูกแทนที่`)) return;
       await replaceAllHoldings(incoming);
       await saveQuote(incomingQuote);
+      const manualQuote = 'manualQuote' in parsed ? (parsed.manualQuote as ManualQuote | null) : incomingQuote.source === 'manual' ? incomingQuote : null;
+      await saveManualQuote(manualQuote);
+      const syncState = await getCloudSyncState();
+      await saveCloudSyncState({ ...syncState, manualQuoteUpdatedAt: manualQuote ? new Date().toISOString() : null });
       setHoldings(incoming); setQuote(incomingQuote); setError(''); setMessage('กู้คืนข้อมูลสำเร็จ');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'อ่านไฟล์ไม่สำเร็จ');
@@ -255,7 +264,7 @@ export default function App() {
         <button className={`nav-link ${tab === 'holdings' ? 'is-active' : ''}`} onClick={() => setTab('holdings')}><Package size={18} />สินทรัพย์ทอง<span className="nav-count">{holdings.length}</span></button>
         <button className={`nav-link ${tab === 'prices' ? 'is-active' : ''}`} onClick={() => setTab('prices')}><BarChart3 size={18} />ราคาอ้างอิง</button>
       </div>
-      <div className="sidebar-bottom"><div className="privacy-card"><ShieldCheck size={17} /><div><strong>ข้อมูลอยู่ในอุปกรณ์นี้</strong><span>ไม่มีบัญชี · ไม่มี cloud sync</span></div></div><button className={`nav-link ${tab === 'backup' ? 'is-active' : ''}`} onClick={() => setTab('backup')}><Download size={18} />สำรองและกู้คืน</button><div className="version-note">ข้อมูลส่วนตัว · จัดเก็บใน browser</div></div>
+      <div className="sidebar-bottom"><div className="privacy-card"><ShieldCheck size={17} /><div><strong>เริ่มต้นแบบ local-first</strong><span>Cloud Sync เปิดได้หลังยืนยัน</span></div></div><button className={`nav-link ${tab === 'backup' ? 'is-active' : ''}`} onClick={() => setTab('backup')}><Download size={18} />สำรองและกู้คืน</button><div className="version-note">ข้อมูลหลักจัดเก็บใน browser</div></div>
     </aside>
 
     <main className="main-area" id="top">
@@ -297,12 +306,13 @@ export default function App() {
           </>}
 
           {tab === 'backup' && <>
-            <div className="page-heading"><div><span className="eyebrow">LOCAL DATA CONTROL</span><h1>ข้อมูลและความเป็นส่วนตัว</h1><p>ข้อมูลสินทรัพย์ทองถูกจัดเก็บใน browser ของอุปกรณ์นี้</p></div></div>
-            <section className="panel privacy-panel"><div className="privacy-large"><ShieldCheck size={22} /></div><div><h2>ข้อมูลพอร์ตเก็บไว้ในอุปกรณ์นี้</h2><p>ไม่มีบัญชีผู้ใช้และไม่มี cloud sync รายการทอง ต้นทุน รูปทอง และใบรับประกันไม่ออกจากอุปกรณ์นี้; server ใช้เฉพาะดึงราคาสาธารณะจากสมาคมฯ และไม่รับข้อมูลพอร์ต หากล้างข้อมูล browser หรือเปลี่ยนอุปกรณ์ รายการอาจหายได้ โปรดดาวน์โหลดไฟล์สำรองเป็นระยะ</p></div></section>
+            <div className="page-heading"><div><span className="eyebrow">LOCAL DATA CONTROL</span><h1>ข้อมูลและความเป็นส่วนตัว</h1><p>ข้อมูลทองเริ่มต้นเก็บใน browser และซิงก์ขึ้น BNK ได้เมื่อเข้าสู่ระบบและยืนยัน</p></div></div>
+            <section className="panel privacy-panel"><div className="privacy-large"><ShieldCheck size={22} /></div><div><h2>Local-first พร้อม Cloud Sync แบบสมัครใจ</h2><p>รายการทองและไฟล์แนบยังบันทึกในอุปกรณ์นี้เสมอ การเข้าสู่ระบบ Manus ไม่ส่งข้อมูลขึ้น cloud โดยอัตโนมัติ ต้องยืนยันเปิด Cloud Sync ก่อนครั้งแรกและก่อนเชื่อมอุปกรณ์ใหม่ ราคาสมาคมฯ ยังคงดึงผ่าน server proxy หากล้างข้อมูล browser รายการที่ยังไม่ซิงก์อาจหายได้ จึงควรดาวน์โหลดไฟล์สำรองเป็นระยะ</p></div></section>
             <div className="backup-grid"><section className="panel backup-card"><span className="backup-icon"><Download size={20} /></span><h2>ส่งออกไฟล์สำรอง</h2><p>ดาวน์โหลดรายการทองและราคาอ้างอิงเป็นไฟล์ JSON เพื่อเก็บไว้นอก browser</p><button className="button button-primary" onClick={exportBackup}><Download size={16} />ดาวน์โหลดข้อมูลสำรอง</button></section><section className="panel backup-card"><span className="backup-icon backup-icon-muted"><FileUp size={20} /></span><h2>นำเข้าหรือกู้คืน</h2><p>เลือกไฟล์สำรองจากทองพอร์ต ข้อมูลปัจจุบันจะถูกแทนที่หลังยืนยัน</p><input ref={importRef} className="sr-only" type="file" accept="application/json,.json" onChange={(e) => void importBackup(e.target.files?.[0])} /><button className="button button-ghost" onClick={() => importRef.current?.click()}><FileUp size={16} />เลือกไฟล์ JSON</button></section></div>
             <div className="notice notice-warm"><AlertTriangle size={17} /><p><strong>สำรองข้อมูลอย่างปลอดภัย</strong><br />ไฟล์ JSON มีข้อมูลพอร์ตและราคาซื้อของคุณ เก็บไว้ในที่ปลอดภัยและอย่าส่งต่อให้ผู้อื่นโดยไม่จำเป็น</p></div>
           </>}
         </>}
+        <CloudSyncPanel visible={tab === 'backup'} holdings={holdings} quote={quote} onHoldingsChange={setHoldings} onQuoteChange={(nextQuote) => { setQuote(nextQuote); setPriceStatus('manual'); }} />
         <footer className="app-footer"><span>ทองพอร์ต <i /> พอร์ตทองส่วนตัว</span><span>ราคาอ้างอิงสมาคมฯ · ตรวจอัตโนมัติทุก 2 นาที</span></footer>
       </div>
     </main>

@@ -2,27 +2,31 @@
 
 ## Approved scope
 
-The user selected Supabase project **BNK** (`etsguakphlytlvzotmor`) and explicitly asked to include photo and warranty attachments. Goldfolio will use its own `public.goldfolio_*` tables and a private bucket named `goldfolio-attachments`; existing RoomRent tables, rows and buckets are out of scope and must not be read, altered or deleted.
+The user selected Supabase project **BNK** (`etsguakphlytlvzotmor`) and explicitly asked to include photo and warranty attachments. Goldfolio uses only `public.goldfolio_holdings`, `public.goldfolio_preferences`, and the private bucket `goldfolio-attachments`. Existing RoomRent tables, rows, functions, and buckets are outside Goldfolio's migration and have not been modified.
 
-The project's WebDev server capability is already enabled; the managed WebDev database remains disabled. Website auto-publishing remains off.
+The WebDev server capability is enabled; the WebDev managed database remains disabled. Auto Publish is off. No live publication was requested.
 
-## Security design
+## Applied schema and verified access
 
-- Use Manus OAuth for app-user identity, as required by the WebDev authentication contract. The server validates the application session and derives the owner identifier from the verified Manus `openId`; it never trusts an `owner_id` supplied by the browser.
-- Keep all database and Storage requests behind the Node server. Use a Supabase secret key only as a server environment value; never add it to Vite-prefixed variables, client bundles, source files, Git, logs or screenshots.
-- Enable Row Level Security on all new public-schema tables and revoke `anon` and `authenticated` grants. There are no direct browser-to-Supabase data requests. The server uses its privileged key, which bypasses RLS, so every API operation must explicitly filter by the verified owner ID and validate resource ownership.
-- Keep the Storage bucket private. Only accept the app's image/PDF types and enforce the upload size limits already used by the client. Private access is mediated by the authenticated server; no public object URLs.
-- Keep IndexedDB and JSON export/restore as the local cache/offline fallback. Do not upload existing local holdings or attachments on first login until the user confirms the initial sync in the app. After that explicit opt-in, authenticated changes may sync automatically; failures must preserve local data and show a pending/error state.
-- Use conflict-aware merging by `updatedAt`, with deletion tombstones so an offline or stale device does not silently restore a remotely deleted holding. Do not replace one side wholesale without an explicit action.
+On 2026-11-19, the additive migration `goldfolio_cloud_sync` created the two Goldfolio tables, owner/update index, server-only upsert RPC, and private attachment bucket. Read-only checks confirmed `relrowsecurity = true` and `relforcerowsecurity = true` for both tables. `anon` and `authenticated` have no table grants; `service_role` has the table privileges used by the server. The upsert RPC is executable by `service_role` only. The bucket is private, limited to 5 MiB, and allows JPEG, PNG, WebP, and PDF.
 
-## Verified official Supabase guidance
+A restrictive `storage.objects` policy denies all direct access to the Goldfolio bucket while leaving other buckets' policy behavior unchanged. The Supabase security advisor reports “RLS enabled, no policy” for both new tables; this is intentional fail-closed behavior combined with revoked browser grants. No client role receives direct table access. Supabase advisors also returned unrelated pre-existing notices elsewhere in BNK; those objects are not part of this change and were not altered.
 
-Supabase recommends secret keys only for controlled server-side components because they have elevated access and bypass RLS; they must never be exposed in a browser or source control. Its API-key guide also recommends current `sb_secret_...` keys over legacy `service_role` JWT keys.[1]
+## Credentials and request flow
 
-Supabase's RLS guide says to enable RLS on every table in an exposed schema and explicitly manage grants. A privileged secret key bypasses RLS, so application-server authorization checks remain mandatory.[2]
+- `GOLDFOLIO_SUPABASE_SECRET_KEY` is the server-only Supabase secret API key used on the `apikey` header for PostgREST database requests. It must never be sent as `Authorization: Bearer` because the current opaque `sb_secret_...` keys are not JWTs.[1]
+- `GOLDFOLIO_SUPABASE_STORAGE_SERVICE_KEY` is a separate server-only `service_role` JWT used for private Storage requests. Supabase Storage's server-side access guidance uses the service key in the `Authorization` header to bypass RLS; this credential never reaches the browser.[2]
+- Both values must be added through WebDev's protected-secret input surface, not pasted into chat or committed to source, `.env`, public Git, logs, screenshots, or responses. They are not currently configured, so live authentication/database/storage requests and end-to-end saves remain unverified.
+- Manus OAuth provides the application identity. The server validates the `webdev_app_session` HS256 signature, project ID, expiry, and `openId`; it derives the owner from that verified session and never accepts `owner_id` from the client.
+- All database requests pass through the Node API, are filtered by the session-derived owner ID, and require Cloud Sync opt-in. Existing local records and attachments are not uploaded until the user confirms first sync. Local IndexedDB and JSON backup remain available if cloud operations fail.
+- Attachment paths are opaque owner-hash/record/slot/UUID keys. Uploads validate MIME signatures, metadata and a 5 MiB limit; downloads require an authenticated owner-scoped record lookup. The bucket is not public and no public object URL is generated.
 
-Supabase Storage private buckets restrict object access and downloads; signed URLs are time-limited. Goldfolio instead serves private attachments through its authenticated server boundary and keeps no public bucket.[3]
+## Remaining verification
 
-[1]: https://supabase.com/docs/guides/getting-started/api-keys "Supabase API keys"
-[2]: https://supabase.com/docs/guides/database/postgres/row-level-security "Supabase Row Level Security"
-[3]: https://supabase.com/docs/guides/storage/buckets/fundamentals "Supabase Storage bucket fundamentals"
+Configure both protected secrets, load them into the development runtime, and then test OAuth login, status, consent/cancel, holding upsert and delete tombstones, owner isolation, quote preferences, and private attachment upload/download/delete. Confirm successful saves only after these requests have been exercised with real authenticated sessions. Do not publish unless the user explicitly requests it.
+
+## References
+
+[1]: https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys "Supabase API key migration guide"
+[2]: https://supabase.com/docs/guides/storage/security/access-control "Supabase Storage access control"
+[3]: https://supabase.com/docs/reference/javascript/storage-from-remove "Supabase Storage object removal API"

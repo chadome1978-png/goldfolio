@@ -2,6 +2,30 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { getOfficialGoldQuote } from './server/price-source.mjs';
+import { handleGoldfolioApi } from './server/cloud-api.mjs';
+
+function goldfolioApiPlugin(): Plugin {
+  const middleware = (request: IncomingMessage, response: ServerResponse, next: (error?: unknown) => void) => {
+    const url = new URL(request.url ?? '/', 'http://localhost');
+    if (!url.pathname.startsWith('/api/')) return next();
+    void handleGoldfolioApi(request, response).then((handled) => {
+      if (!handled && !response.writableEnded) next();
+    }).catch(() => {
+      if (!response.writableEnded) {
+        response.statusCode = 500;
+        response.setHeader('Content-Type', 'application/json; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-store');
+        response.end(JSON.stringify({ error: 'internal_error' }));
+      }
+    });
+  };
+
+  return {
+    name: 'goldfolio-cloud-api',
+    configureServer(server) { server.middlewares.use(middleware); },
+    configurePreviewServer(server) { server.middlewares.use(middleware); },
+  };
+}
 
 function priceApiPlugin(): Plugin {
   const middleware = (request: IncomingMessage, response: ServerResponse, next: (error?: unknown) => void) => {
@@ -41,6 +65,6 @@ function priceApiPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), priceApiPlugin()],
+  plugins: [react(), priceApiPlugin(), goldfolioApiPlugin()],
   build: { outDir: 'dist', emptyOutDir: true },
 });

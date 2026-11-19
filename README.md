@@ -1,19 +1,23 @@
 # ทองพอร์ต
 
-เว็บแอปส่วนตัวสำหรับติดตามทองคำแท่งและทองรูปพรรณ 96.5% บนมือถือและ desktop มี Dashboard, CRUD, ไฟล์แนบ และการคำนวณมูลค่า/กำไรขาดทุนโดยประมาณจากราคาสมาคมค้าทองคำที่ดึงอัตโนมัติเมื่อเปิดแอปและทุก 2 นาทีขณะเปิดใช้งาน
+เว็บแอปส่วนตัวสำหรับติดตามทองคำแท่งและทองรูปพรรณ 96.5% บนมือถือและ desktop มี Dashboard, เพิ่ม/แก้ไข/ลบรายการ, ไฟล์แนบ และคำนวณมูลค่า/กำไรขาดทุนโดยประมาณจากราคาสมาคมค้าทองคำซึ่งดึงผ่าน Node server เมื่อเปิดแอปและทุก 2 นาทีขณะเปิดใช้งาน
 
-หน้า **Overview** กำลังทดลองธีมตามภาพอ้างอิง: **Graphite/Charcoal + ทองเมทัลลิก** พร้อมตัวอักษรขาวนวล/เทาอ่อน; ใช้ CSS sheen และเส้นเรืองแสงทองบนการ์ดราคาโดยไม่คัดลอกโลโก้หรือโฆษณาในภาพ แท็บอื่นยังใช้ธีมเดิมจนกว่าจะยืนยันขยาย
+ทุกแท็บใช้ธีม **Graphite/Charcoal + Metallic Gold** พร้อมตัวอักษรขาวนวล/เทาอ่อน; รายการทองและไฟล์แนบคงอยู่ใน IndexedDB เพื่อใช้งานแบบ local-first และส่งออก/นำเข้า JSON ได้
 
-ภาพ Preview ล่าสุด: [Dashboard Desktop](dashboard-theme-graphite-gold-desktop.png) · [Dashboard Mobile](dashboard-theme-graphite-gold-mobile.png) · [ฟอร์มซื้อเข้า](add-transaction-form-preview.webp)
+## สถานะ Cloud Sync
 
-## การตัดสินใจด้านราคา/ข้อมูล
+สร้าง schema เฉพาะ Goldfolio ใน Supabase BNK (`etsguakphlytlvzotmor`) แล้ว ได้แก่ `public.goldfolio_holdings`, `public.goldfolio_preferences` และ private bucket `goldfolio-attachments` โดยเปิด/บังคับ RLS และไม่ให้ browser roles อ่าน/เขียนโดยตรง
 
-- มี Node server เฉพาะ proxy ราคาสาธารณะจากสมาคมฯ เพราะ upstream ไม่เปิด CORS; server ไม่ได้รับรายการทอง ต้นทุน รูปภาพ หรือใบรับประกัน
-- ราคาสมาคมฯ ดึงอัตโนมัติและรีเฟรชทุก 2 นาทีขณะเปิดแอป; หากเชื่อมต่อไม่ได้ ใช้ quote ล่าสุดในเครื่องและแจ้งสถานะ; ผู้ใช้กรอกราคาสำรองได้
-- รายการทอง รูป/เอกสารแนบ และ quote ล่าสุดยังเก็บใน IndexedDB ของ browser เครื่องที่ใช้อยู่; Cloud Sync ไป BNK ยังไม่เปิดใช้งานและยังไม่มีข้อมูล Goldfolio บันทึกใน Supabase
-- รูป/เอกสารยังไม่อัปโหลดขึ้น server; รูปถูกปรับขนาดก่อนเก็บ, PDF จำกัด 5 MB และไฟล์ backup รุ่นเดิมที่ไม่มี attachments ยังนำเข้าได้
-- ส่งออก/นำเข้าข้อมูลสำรอง JSON; ควรสำรองก่อนล้าง browser หรือเปลี่ยนอุปกรณ์
-- แผนและสถานะการพัฒนาอยู่ใน `plan.md`, `TODO.md`, `BUILD-PLAN.md`, `PRICE-SOURCE.md` และ `SUPABASE-SECURITY.md`
+โค้ด Manus OAuth, API ฝั่ง Node, Cloud Sync แบบ owner-scoped และหน้าขอยินยอมก่อน first sync เพิ่มไว้แล้ว แต่ **ยังไม่ยืนยันการเชื่อมต่อหรือการบันทึกข้อมูลจริง** จนกว่าจะกำหนด protected secrets ผ่าน input card ของ WebDev และทดสอบ end-to-end; ขณะนี้ยังไม่มี Goldfolio records ที่ซิงก์ไป BNK ผู้ใช้ต้องยืนยันก่อนส่งข้อมูล local ครั้งแรก
+
+เมื่อกำหนดค่า secret ในอนาคต ใช้ `GOLDFOLIO_SUPABASE_SECRET_KEY` สำหรับ PostgREST จาก server และ `GOLDFOLIO_SUPABASE_STORAGE_SERVICE_KEY` สำหรับ private Storage จาก server เท่านั้น ห้ามใส่ค่า credential ใน source, client bundle, `.env` ที่ commit, log หรือ public repository
+
+## ราคาและข้อมูล
+
+- Node server proxy อ่านราคาสาธารณะจากสมาคมฯ เพราะ upstream ไม่เปิด CORS; server ไม่รับรายการทองและราคาซื้อส่วนตัวเพื่อคำนวณ
+- ราคาอ้างอิงรีเฟรชทุก 2 นาทีขณะเปิดแอป; หากเชื่อมต่อไม่ได้ใช้ quote cache ในอุปกรณ์และแสดงสถานะ พร้อมรองรับราคาสำรองที่ผู้ใช้กรอกเอง
+- รูปทองและเอกสารแนบเก็บใน IndexedDB ก่อน; private Storage รับเฉพาะ JPEG/PNG/WebP/PDF ขนาดไม่เกิน 5 MiB ต่อไฟล์ ผ่าน server หลังเปิด Cloud Sync
+- ไฟล์สำรอง JSON เก็บข้อมูลในพอร์ตและราคาไว้กับผู้ใช้ ควรเก็บในที่ปลอดภัย
 
 ## คำสั่ง
 
@@ -22,4 +26,4 @@
 - `pnpm start` — เริ่ม production Node API/static server (ตั้ง `PORT` ได้)
 - `pnpm preview` — serve production build เพื่อ QA
 
-แอปยังไม่เผยแพร่สู่ public hosting; เปิดดูผ่าน Preview ของโปรเจกต์ใน Manus
+ยังไม่ publish เวอร์ชันใหม่นี้; การเผยแพร่ต้องรอผู้ใช้สั่งโดยชัดแจ้ง

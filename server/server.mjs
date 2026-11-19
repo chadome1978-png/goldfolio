@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getOfficialGoldQuote } from './price-source.mjs';
+import { handleGoldfolioApi } from './cloud-api.mjs';
 
 const PORT = Number(process.env.PORT) || 3000;
 const DIST = resolve(fileURLToPath(new URL('../dist/', import.meta.url)));
@@ -108,6 +109,7 @@ const server = createServer(async (request, response) => {
   }
 
   if (url.pathname.startsWith('/api/')) {
+    if (await handleGoldfolioApi(request, response)) return;
     sendJson(response, 404, { error: 'not_found' });
     return;
   }

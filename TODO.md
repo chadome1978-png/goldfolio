@@ -12,22 +12,21 @@
 - [x] ธีม Overview ทอง–แดงเป็น preview รอบก่อน; หน้าอื่นคง theme ที่เลือกและ responsive layout
 - [x] Build ผ่าน, endpoint official ผ่าน parser/production smoke, Dashboard price refresh และ recalculation ทดสอบใน Preview; QA data ถูกล้าง
 
-## Cloud Sync ใน BNK — อนุมัติขอบเขตแล้ว กำลังพัฒนา
-- [ ] สร้าง additive migration เฉพาะ `public.goldfolio_*`; ห้ามอ่าน/แก้/ลบตารางหรือ records เดิมของ RoomRent
-- [ ] เปิด RLS สำหรับตารางใหม่และถอน grants ของ `public`, `anon`, `authenticated`; ให้ server เท่านั้นเข้าฐานข้อมูลด้วย secret key
-- [ ] สร้าง private bucket `goldfolio-attachments` พร้อม MIME allowlist (JPEG/PNG/WebP/PDF) และจำกัดไฟล์ไม่เกิน 5 MiB
-- [ ] ใช้ Manus OAuth ตาม WebDev contract: ตรวจ `state`/nonce แบบ one-time, ตรวจ app session JWT, cookie `webdev_app_session`, derive `owner_id` จาก `openId` ที่ยืนยันแล้ว
-- [ ] ป้องกัน API ด้วย auth; ทุก query บังคับ owner scope; ไม่รับ `owner_id` จาก client; secret key อยู่ฝั่ง server เท่านั้นและไม่เข้า GitHub/browser/log/response
-- [ ] เพิ่มหน้า/สถานะบัญชีและ Cloud Sync: logged-in/out, sync off/on, เวลา sync ล่าสุด, pending/error/retry
-- [ ] คง IndexedDB/JSON backup เป็น local/offline fallback; หาก upload/download ล้มเหลวต้องไม่ทำข้อมูล local หาย
-- [ ] การ sign-in ครั้งแรกต้องยังไม่ upload local data อัตโนมัติ; แสดงจำนวน records/files และขอ user ยืนยันก่อน merge
-- [ ] เมื่อยืนยันแล้ว ให้ merge holdings และรูปทอง/ใบรับประกันทั้งหมดกับ BNK; new CRUD/attachments sync เมื่อออนไลน์และผู้ใช้เปิด sync
-- [ ] ใช้ `updatedAt` reconciliation, pending queue และ remote deletion tombstones เพื่อรองรับ offline/retry และหลายอุปกรณ์โดยไม่คืนรายการที่ลบแล้วโดยเงียบ ๆ
-- [ ] Quote official เป็นข้อมูลสาธารณะและไม่จำเป็นต้อง sync; manual fallback ส่วนตัวเก็บ/sync ผ่าน preferences เมื่อผู้ใช้เปิด Cloud Sync เท่านั้น
-- [ ] สร้าง/อัปเดต bucket โดยไม่เปิด public; upload/download/delete attachment ผ่าน authenticated server, ตรวจสิทธิ์เจ้าของทุกครั้ง
-- [ ] ทดสอบ RLS/default deny, owner isolation ระหว่างผู้ใช้, OAuth callback/state, first-sync cancel/confirm, conflicts, tombstone delete, offline queue, private files และ legacy backups
-- [ ] เก็บ service secret ผ่าน protected WebDev secret input; ห้ามแสดง/บันทึกค่า secret และห้าม push เข้าสู่ public GitHub
-- [ ] Build, runtime smoke, Preview QA และยืนยัน config `database:false`, `auto_publish:false`; ไม่ publish จนผู้ใช้สั่ง
+## Cloud Sync ใน BNK — schema และโค้ดพร้อม; รอ protected credentials เพื่อทดสอบ end-to-end
+- [x] สร้าง additive migration เฉพาะ `public.goldfolio_*`; ไม่แตะ schema, records หรือ files ของ RoomRent
+- [x] เปิดและบังคับ RLS สำหรับตารางใหม่; ถอน browser-role grants และตรวจว่า `service_role` เท่านั้นมีสิทธิ์
+- [x] สร้าง private bucket `goldfolio-attachments` พร้อม MIME allowlist (JPEG/PNG/WebP/PDF) และจำกัดไฟล์ไม่เกิน 5 MiB; ตรวจ private status และ restrictive server-only policy
+- [x] เพิ่ม Manus OAuth ตาม WebDev contract: one-time state/nonce, ตรวจ app session JWT, cookie `webdev_app_session`, จำกัด trusted redirect origin และ derive `owner_id` จาก `openId` ที่ยืนยันแล้ว
+- [x] เพิ่ม authenticated server APIs ที่ derive owner จาก session เท่านั้น; ทุก query filter ด้วย owner ID และไม่มี Supabase credential ใน browser bundle
+- [x] เพิ่มแผงบัญชี/Cloud Sync แสดง logged-in/out, sync off/on, จำนวนรายการ/ไฟล์, เวลาซิงก์, pending/error/retry และ first-sync consent
+- [x] คง IndexedDB/JSON backup เป็น local/offline fallback; sync queue/tombstones เก็บในเครื่องและไม่ลบข้อมูล local เมื่อ server ตอบผิดพลาด
+- [x] เพิ่ม first-sync flow ที่ไม่ upload local data ก่อนกดยืนยัน; มีทางยกเลิกและ merge holdings/ไฟล์แนบกับ remote หลังยินยอม
+- [x] เพิ่ม code สำหรับ sync CRUD/attachments เมื่อออนไลน์, conflict resolution ด้วย `updatedAt`, pending retry และ remote deletion tombstones
+- [x] Official quote ไม่ sync; manual fallback ส่วนตัวเก็บและ sync ผ่าน preferences เมื่อเปิด Cloud Sync เท่านั้น
+- [x] เพิ่ม server-only upload/download/delete ไปยัง private Storage พร้อมตรวจ session, ownership, MIME signature และขนาดไฟล์
+- [ ] กำหนด `GOLDFOLIO_SUPABASE_SECRET_KEY` และ `GOLDFOLIO_SUPABASE_STORAGE_SERVICE_KEY` ผ่าน protected WebDev secret input; ห้ามแสดงหรือ commit ค่า secret
+- [ ] หลัง credentials พร้อม ทดสอบ OAuth, first-sync cancel/confirm, owner isolation, CRUD/attachments, preferences, conflict/tombstone, offline retry และ legacy backups ด้วย session จริง
+- [x] `pnpm build`, `git diff --check` และ Node syntax checks ผ่าน; WebDev `database:false`/`auto_publish:false`; ยังไม่ publish
 
 ## ธีมที่ตรวจรอบก่อน — ทอง + น้ำเงิน (เฉพาะ Overview)
 - [x] คงพื้น/การ์ดทองของหน้า Overview แต่เปลี่ยน accent จากแดงเป็นน้ำเงินเข้ม; ใช้น้ำเงินกับ active/brand/button accents และตัวอักษรขาวบนปุ่มน้ำเงิน

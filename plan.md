@@ -10,7 +10,7 @@
 
 - ใช้ Manus OAuth เป็นตัวระบุตัวผู้ใช้ แอปไม่สร้างระบบรหัสผ่านหรือ Supabase Auth เอง
 - คง WebDev `server:true`, `database:false` (ไม่ใช้ฐานข้อมูลที่ WebDev จัดให้) และ `auto_publish:false`; ข้อมูลเก็บใน BNK ผ่าน Node server ของแอปเท่านั้น
-- Browser ไม่เชื่อม Supabase โดยตรง และไม่มี service/secret key ใน bundle หรือ Git; ใช้ key ที่บันทึกผ่าน protected environment secret ของ WebDev เฉพาะ server เท่านั้น
+- Browser ไม่เชื่อม Supabase โดยตรง และไม่มี service/secret key ใน bundle หรือ Git; ใช้ `GOLDFOLIO_SUPABASE_SECRET_KEY` สำหรับ PostgREST และ `GOLDFOLIO_SUPABASE_STORAGE_SERVICE_KEY` สำหรับ private Storage จาก protected environment secret ของ WebDev เฉพาะ server เท่านั้น
 - รายการทองและไฟล์แนบยังคง cache ใน IndexedDB และ export/import JSON ได้ เพื่อใช้งาน offline และเป็นข้อมูลสำรอง
 - หลังผู้ใช้ยืนยันเปิด Cloud Sync ครั้งแรก ข้อมูลรายการทองที่มีอยู่และไฟล์แนบจะ merge ไปยัง BNK; ก่อนกดยืนยัน ห้ามอัปโหลดข้อมูลเดิมโดยอัตโนมัติ แม้ผู้ใช้ลงชื่อเข้าใช้แล้ว
 - หลัง first sync consent สำเร็จ รายการที่เพิ่ม/แก้ไข/ลบใหม่จะ sync อัตโนมัติเมื่อออนไลน์และลงชื่อเข้าใช้; งานที่ยัง sync ไม่สำเร็จต้องคงใน local queue พร้อมสถานะที่เข้าใจได้
@@ -19,9 +19,9 @@
 
 ## แบบจำลองข้อมูลและสิทธิ์
 
-ใช้ตารางแยกเฉพาะแอป เช่น `public.goldfolio_holdings` สำหรับข้อมูลรายการ, owner, object paths, `updated_at` และ tombstone; `public.goldfolio_preferences` สำหรับค่าตั้งส่วนตัวที่จำเป็นต่อการซิงก์ (เช่น manual price fallback ถ้ามี) หลีกเลี่ยงการเก็บ bytes ของภาพใน JSONB
+สร้างตารางแยกเฉพาะแอป `public.goldfolio_holdings` สำหรับข้อมูลรายการ, owner, object paths, `updated_at` และ tombstone; `public.goldfolio_preferences` สำหรับค่าตั้งส่วนตัวที่จำเป็นต่อการซิงก์ (เช่น manual price fallback ถ้ามี) หลีกเลี่ยงการเก็บ bytes ของภาพใน JSONB
 
-เปิด RLS บนตารางใหม่ และถอน grants จาก `public`, `anon`, `authenticated`; server API เข้าฐานข้อมูลด้วย key ฝั่ง server ซึ่ง bypasses RLS ดังนั้นทุก API ต้องตรวจ Manus session ก่อน แล้ว derive `owner_id` จาก `openId` ที่ตรวจสอบแล้วเท่านั้น—ห้ามรับ `owner_id` จาก request body/query และทุก select/upsert/delete ต้องกรอง owner ID เสมอ
+เปิดและบังคับ RLS บนตารางใหม่ พร้อมถอน grants จาก `public`, `anon`, `authenticated`; server API เข้าฐานข้อมูลด้วย key ฝั่ง server ซึ่ง bypasses RLS ดังนั้นทุก API ต้องตรวจ Manus session ก่อน แล้ว derive `owner_id` จาก `openId` ที่ตรวจสอบแล้วเท่านั้น—ห้ามรับ `owner_id` จาก request body/query และทุก select/upsert/delete ต้องกรอง owner ID เสมอ
 
 สร้าง bucket `goldfolio-attachments` เป็น **private** สำหรับรูป JPEG/PNG/WebP และใบรับประกันภาพหรือ PDF; จำกัด MIME/ขนาดตามข้อกำหนดแอป ตั้ง object key ที่ไม่เผยชื่อไฟล์/ตัวระบุบัญชี และให้ server ตรวจสิทธิ์ก่อน upload/download/delete ไม่มี public URL หรือ direct client access
 
@@ -53,7 +53,7 @@ React 19, TypeScript 7, Vite 8; Node.js HTTP server ให้ price proxy แล
 
 - `server/server.mjs`: price endpoint, Manus OAuth callback/session, authenticated holdings/preferences/file API, health endpoint และ SPA/static fallback
 - `server/manus-auth.mjs`: OAuth state+nonce, token exchange, verified user identity และ `webdev_app_session` cookie ตาม WebDev contract
-- `server/supabase-client.mjs`: server-only Supabase fetch helper ที่อ่าน BNK secret จาก environment
+- `server/supabase-client.mjs`: server-only Supabase fetch helper สำหรับ PostgREST secret API key และ Storage service-role JWT จาก environment แยกกัน
 - `src/features/sync/`: client sync state, first-sync consent, reconciliation, queue/retry
 - `src/lib/storage/`: IndexedDB holdings, attachments, pending upserts/deletes, quote cache และ migration เดิมแบบไม่ทำข้อมูลหาย
 - `supabase/migrations/`: additive DDL เฉพาะตาราง `goldfolio_*`, RLS/grants แบบ deny สำหรับ browser roles

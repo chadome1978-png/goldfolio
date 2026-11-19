@@ -5,6 +5,7 @@ export interface HoldingAttachment {
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
   dataUrl: string;
   sizeBytes: number;
+  sha256?: string;
 }
 
 export interface Holding {
@@ -31,6 +32,19 @@ export interface ManualQuote {
   sourceUrl: string;
   source?: 'manual' | 'association';
   fetchedAt?: string;
+}
+
+export interface DeletionTombstone {
+  id: string;
+  deletedAt: string;
+}
+
+export interface LocalCloudSyncState {
+  enabled: boolean;
+  ownerKey: string | null;
+  lastSyncedAt: string | null;
+  manualQuoteUpdatedAt: string | null;
+  error: string | null;
 }
 
 export interface AppSettings {
