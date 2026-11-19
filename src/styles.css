@@ -1647,3 +1647,95 @@ body:has(.app-shell.home-theme-preview) ::selection { color: #17181B; background
     font-size: clamp(12px, 3.5vw, 14px);
   }
 }
+
+/* Shared Graphite/Gold surfaces for Holdings, Prices, and Backup tabs. */
+.home-theme-preview .list-toolbar { gap: 10px; }
+.home-theme-preview .search-field,
+.home-theme-preview .select-field {
+  border-color: #45464D;
+  color: #BFC0C4;
+  background: #202126;
+}
+.home-theme-preview .search-field:focus-within,
+.home-theme-preview .select-field:focus-within { border-color: #A88B49; }
+.home-theme-preview .search-field input { color: #F5F4EF; }
+.home-theme-preview .search-field input::placeholder { color: #AEB0B4; }
+.home-theme-preview .search-field kbd { border-color: #55565C; color: #BFC0C4; background: #17181B; }
+.home-theme-preview .select-field select { color: #F5F4EF; }
+.home-theme-preview .select-field option { color: #F5F4EF; background: #202126; }
+.home-theme-preview .list-summary { color: #BFC0C4; }
+.home-theme-preview .holdings-list { gap: 9px; }
+.home-theme-preview .holding-line {
+  border-color: #414249;
+  background: linear-gradient(145deg, #25262A, #1D1E22);
+}
+.home-theme-preview .holding-line:hover { border-color: #8C7439; }
+.home-theme-preview .holding-emblem {
+  border-color: #796432;
+  color: #FFD36A;
+  background: #302A1D;
+}
+.home-theme-preview .holding-main strong,
+.home-theme-preview .holding-cost strong,
+.home-theme-preview .holding-profit strong { color: #F5F4EF; }
+.home-theme-preview .holding-main > span,
+.home-theme-preview .holding-cost span,
+.home-theme-preview .holding-profit span { color: #BFC0C4; }
+.home-theme-preview .purity-tag {
+  color: #FFE08A;
+  background: #40351F;
+}
+.home-theme-preview .profit-positive strong { color: #65D39A; }
+.home-theme-preview .profit-negative strong { color: #FF8C85; }
+.home-theme-preview .profit-pending strong { color: #D0D0D0; }
+.home-theme-preview .icon-button { color: #BFC0C4; }
+.home-theme-preview .icon-button:hover {
+  border-color: #796432;
+  color: #FFD36A;
+  background: #302A1D;
+}
+.home-theme-preview .icon-button.danger-icon:hover {
+  border-color: #8F4243;
+  color: #FF8C85;
+  background: #352326;
+}
+
+.home-theme-preview .price-instructions h2,
+.home-theme-preview .privacy-panel h2,
+.home-theme-preview .backup-card h2 { color: #F5F4EF; }
+.home-theme-preview .price-instructions p,
+.home-theme-preview .privacy-panel p,
+.home-theme-preview .backup-card p { color: #C9C9C7; }
+.home-theme-preview .instruction-icon,
+.home-theme-preview .backup-icon {
+  border-color: #796432;
+  color: #FFD36A;
+  background: #302A1D;
+}
+.home-theme-preview .privacy-large {
+  border-color: #347A53;
+  color: #A8E7C0;
+  background: #17432F;
+}
+.home-theme-preview .backup-icon-muted {
+  border-color: #55565C;
+  color: #D0D0D0;
+  background: #28292D;
+}
+.home-theme-preview .notice-warn {
+  border-color: #796432;
+  color: #E8D9B2;
+  background: linear-gradient(145deg, #302A1D, #25231E);
+}
+.home-theme-preview .notice-warn strong { color: #FFE08A; }
+.home-theme-preview .notice-warm {
+  border-color: #555044;
+  color: #D0D0D0;
+  background: linear-gradient(145deg, #28292D, #202126);
+}
+
+@media (max-width: 760px) {
+  .home-theme-preview .list-toolbar { gap: 8px; }
+  .home-theme-preview .holding-line { background: linear-gradient(145deg, #25262A, #1D1E22); }
+  .home-theme-preview .backup-grid { gap: 10px; }
+}

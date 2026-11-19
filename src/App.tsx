@@ -247,7 +247,7 @@ export default function App() {
 
   const pageTitle: Record<AppTab, string> = { overview: 'ภาพรวมพอร์ต', holdings: 'สินทรัพย์ทอง', prices: 'ราคาอ้างอิง', backup: 'ข้อมูลและความเป็นส่วนตัว' };
 
-  return <div className={`app-shell${tab === 'overview' ? ' home-theme-preview' : ''}`}>
+  return <div className="app-shell home-theme-preview">
     <aside className="sidebar">
       <a className="brand" href="#top" onClick={(event) => { event.preventDefault(); setTab('overview'); }}><span className="brand-mark"><Coins size={21} /></span><span>ทองพอร์ต<small>PERSONAL GOLD</small></span></a>
       <div className="sidebar-section"><span className="sidebar-label">พอร์ตของฉัน</span>
