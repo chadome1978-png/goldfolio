@@ -1544,3 +1544,99 @@ body:has(.app-shell.home-theme-preview) ::selection { color: #17181B; background
   .home-theme-preview .mobile-nav button.mobile-nav-add { color: #17181B; }
   .home-theme-preview .mobile-nav-add > span:first-child { color: #17181B; border-color: #C89931; background: linear-gradient(145deg, #FFD873, #C89931); }
 }
+
+/* Refined compact price card for the Overview: aligned header and balanced quote panels. */
+.home-theme-preview .market-card-compact {
+  padding: clamp(14px, 1.7vw, 19px);
+}
+.home-theme-preview .market-card-compact .market-head {
+  align-items: center;
+  gap: 10px;
+}
+.home-theme-preview .market-card-compact .market-heading {
+  flex: 1 1 auto;
+}
+.home-theme-preview .market-card-compact .market-kicker-line {
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.home-theme-preview .market-card-compact .market-kicker {
+  min-height: 28px;
+  align-items: center;
+  font-weight: 600;
+}
+.home-theme-preview .market-card-compact .price-status-badge {
+  flex: 0 0 auto;
+}
+.home-theme-preview .market-card-compact .quote-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 12px;
+}
+.home-theme-preview .market-card-compact .quote-type {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 12px 14px;
+}
+.home-theme-preview .market-card-compact .quote-type-title {
+  min-height: 28px;
+  margin-bottom: 9px;
+}
+.home-theme-preview .market-card-compact .quote-pair {
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+}
+.home-theme-preview .market-card-compact .quote-pair > div {
+  min-width: 0;
+}
+.home-theme-preview .market-card-compact .quote-pair b {
+  font-size: clamp(15px, 1.35vw, 19px);
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .home-theme-preview .market-card-compact .quote-grid {
+    gap: 8px;
+  }
+  .home-theme-preview .market-card-compact .quote-type {
+    padding: 10px;
+  }
+  .home-theme-preview .market-card-compact .quote-type-title {
+    gap: 6px;
+    margin-bottom: 7px;
+    font-size: 12px;
+  }
+  .home-theme-preview .market-card-compact .quote-glyph {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+  }
+  .home-theme-preview .market-card-compact .quote-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .home-theme-preview .market-card-compact .quote-pair > div,
+  .home-theme-preview .market-card-compact .quote-pair > div + div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 6px 0;
+    border-left: 0;
+  }
+  .home-theme-preview .market-card-compact .quote-pair > div + div {
+    border-top: 1px solid #FFFFFF18;
+  }
+  .home-theme-preview .market-card-compact .quote-pair span {
+    font-size: 10px;
+  }
+  .home-theme-preview .market-card-compact .quote-pair b {
+    margin-top: 0;
+    font-size: clamp(12px, 3.5vw, 14px);
+  }
+}
