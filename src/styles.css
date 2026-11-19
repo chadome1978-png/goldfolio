@@ -1547,7 +1547,9 @@ body:has(.app-shell.home-theme-preview) ::selection { color: #17181B; background
 
 /* Refined compact price card for the Overview: aligned header and balanced quote panels. */
 .home-theme-preview .market-card-compact {
-  padding: clamp(14px, 1.7vw, 19px);
+  margin-top: 2px;
+  margin-bottom: 22px;
+  padding: clamp(16px, 1.8vw, 22px) clamp(16px, 2vw, 24px);
 }
 .home-theme-preview .market-card-compact .market-head {
   align-items: center;
@@ -1573,18 +1575,18 @@ body:has(.app-shell.home-theme-preview) ::selection { color: #17181B; background
 .home-theme-preview .market-card-compact .quote-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 14px;
+  margin-top: 14px;
 }
 .home-theme-preview .market-card-compact .quote-type {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 .home-theme-preview .market-card-compact .quote-type-title {
   min-height: 28px;
-  margin-bottom: 9px;
+  margin-bottom: 11px;
 }
 .home-theme-preview .market-card-compact .quote-pair {
   flex: 1;
@@ -1600,11 +1602,16 @@ body:has(.app-shell.home-theme-preview) ::selection { color: #17181B; background
 }
 
 @media (max-width: 620px) {
+  .home-theme-preview .market-card-compact {
+    margin-top: 1px;
+    margin-bottom: 20px;
+    padding: 14px;
+  }
   .home-theme-preview .market-card-compact .quote-grid {
-    gap: 8px;
+    gap: 10px;
   }
   .home-theme-preview .market-card-compact .quote-type {
-    padding: 10px;
+    padding: 12px 11px;
   }
   .home-theme-preview .market-card-compact .quote-type-title {
     gap: 6px;
@@ -1626,7 +1633,7 @@ body:has(.app-shell.home-theme-preview) ::selection { color: #17181B; background
     align-items: center;
     justify-content: space-between;
     gap: 5px;
-    padding: 6px 0;
+    padding: 7px 0;
     border-left: 0;
   }
   .home-theme-preview .market-card-compact .quote-pair > div + div {
